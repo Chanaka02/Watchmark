@@ -1,0 +1,18 @@
+# Secrets: real environment files are never committed.
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.iml
+
+# Logs and local dumps
+*.log
+*.sql.gz
+backups/

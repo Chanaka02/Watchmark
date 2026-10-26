@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+
+/*
+ * Watchmark design tokens. Dark is the default theme; a light theme will
+ * redefine these same tokens later rather than adding per-component overrides.
+ */
+@theme {
+  --color-canvas: #0b0d12;
+  --color-surface: #141821;
+  --color-surface-raised: #1c2130;
+  --color-line: #2a3142;
+  --color-ink: #eef1f7;
+  --color-ink-muted: #a3acbf;
+  --color-accent: #f5b93d;
+  --color-accent-ink: #1a1306;
+  --color-success: #4ade80;
+  --color-danger: #f87171;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 0.875rem;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

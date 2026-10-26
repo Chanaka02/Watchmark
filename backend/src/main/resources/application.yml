@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: watchmark-backend
+  # Local development reads secrets from the repo-root .env file (git-ignored).
+  # In production the same keys are supplied as real environment variables.
+  config:
+    import:
+      - optional:file:../.env[.properties]
+      - optional:file:.env[.properties]
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:watchmark}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+    username: ${DB_USERNAME:watchmark}
+    password: ${DB_PASSWORD}
+  jpa:
+    # Never let Hibernate change the schema; Flyway owns it.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    locations: classpath:db/migration
+
+server:
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+watchmark:
+  tracking:
+    # How long a tracking operation (watch, unwatch, bulk) can be undone.
+    undo-window: 24h
+    # How long undone/unwatched watch rows are kept before being purged.
+    soft-delete-retention: 30d
+    # Master switch for the purge job; false keeps soft-deleted rows forever.
+    purge-enabled: true

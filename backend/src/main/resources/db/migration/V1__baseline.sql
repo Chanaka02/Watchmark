@@ -1,0 +1,12 @@
+-- Baseline migration for Watchmark.
+--
+-- Intentionally creates no tables: it proves Flyway is wired up against MySQL
+-- and gives every later migration a fixed starting point. Schema changes start
+-- in V2 (Milestone 1: users and sessions).
+--
+-- Conventions for all migrations (see docs/data-model.md):
+--   * One logical change per file: MySQL DDL commits implicitly, so a failed
+--     multi-statement migration cannot be rolled back as a whole.
+--   * InnoDB, utf8mb4 / utf8mb4_0900_ai_ci.
+--   * Timestamps are DATETIME(6) holding UTC.
+SELECT 1;
