@@ -1,4 +1,4 @@
-package app.watchmark.auth;
+package app.watchmark.common;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -7,8 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Component;
 
-import app.watchmark.auth.RateLimitProperties.Rule;
-import app.watchmark.common.RateLimitExceededException;
+import app.watchmark.common.RateLimitProperties.Rule;
 
 /**
  * In-memory fixed-window rate limiter for sensitive endpoints.

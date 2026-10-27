@@ -19,6 +19,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -32,17 +33,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-	@ExceptionHandler(RateLimitExceededException.class)
-	ResponseEntity<ProblemDetail> handleRateLimit(RateLimitExceededException ex) {
-		long seconds = Math.max(1, ex.retryAfter().toSeconds());
-		return ResponseEntity.status(ex.status())
-			.header(HttpHeaders.RETRY_AFTER, Long.toString(seconds))
-			.body(problem(ex.status(), ex.type(), ex.title(), ex.getMessage()));
-	}
+	private static final URI ABOUT_BLANK = URI.create("about:blank");
 
 	@ExceptionHandler(ApiException.class)
 	ResponseEntity<ProblemDetail> handleApi(ApiException ex) {
-		return ResponseEntity.status(ex.status()).body(problem(ex.status(), ex.type(), ex.title(), ex.getMessage()));
+		var response = ResponseEntity.status(ex.status());
+		if (ex.retryAfter() != null) {
+			response.header(HttpHeaders.RETRY_AFTER, Long.toString(Math.max(1, ex.retryAfter().toSeconds())));
+		}
+		return response.body(problem(ex.status(), ex.type(), ex.title(), ex.getMessage()));
 	}
 
 	@ExceptionHandler(BadCredentialsException.class)
@@ -81,19 +80,44 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 					"Something went wrong. Please try again later."));
 	}
 
+	/** Invalid JSON request bodies (@Valid @RequestBody). */
 	@Override
 	protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
 			HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 		List<Map<String, String>> errors = ex.getBindingResult()
 			.getFieldErrors()
 			.stream()
-			.map(error -> Map.of("field", error.getField(), "message",
-					error.getDefaultMessage() == null ? "is invalid" : error.getDefaultMessage()))
+			.map(error -> fieldError(error.getField(), error.getDefaultMessage()))
 			.toList();
-		ProblemDetail body = problem(HttpStatus.BAD_REQUEST, "validation-failed", "Validation failed",
-				"One or more fields are invalid.");
-		body.setProperty("errors", errors);
-		return ResponseEntity.badRequest().body(body);
+		return ResponseEntity.badRequest().body(validationProblem(errors));
+	}
+
+	/** Invalid query or path parameters (constraints on controller method parameters). */
+	@Override
+	protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex,
+			HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+		List<Map<String, String>> errors = ex.getParameterValidationResults()
+			.stream()
+			.flatMap(result -> result.getResolvableErrors()
+				.stream()
+				.map(error -> fieldError(result.getMethodParameter().getParameterName(),
+						error.getDefaultMessage())))
+			.toList();
+		return ResponseEntity.badRequest().body(validationProblem(errors));
+	}
+
+	/**
+	 * Spring's built-in MVC errors (wrong parameter type, unknown route, wrong
+	 * method, …) arrive with type {@code about:blank}; give them a stable slug.
+	 */
+	@Override
+	protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers,
+			HttpStatusCode statusCode, WebRequest request) {
+		if (body instanceof ProblemDetail problem
+				&& (problem.getType() == null || ABOUT_BLANK.equals(problem.getType()))) {
+			problem.setType(URI.create("/problems/" + slugFor(statusCode)));
+		}
+		return super.handleExceptionInternal(ex, body, headers, statusCode, request);
 	}
 
 	static ProblemDetail problem(HttpStatusCode status, String type, String title, String detail) {
@@ -101,6 +125,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		problem.setType(URI.create("/problems/" + type));
 		problem.setTitle(title);
 		return problem;
+	}
+
+	private static ProblemDetail validationProblem(List<Map<String, String>> errors) {
+		ProblemDetail body = problem(HttpStatus.BAD_REQUEST, "validation-failed", "Validation failed",
+				"One or more fields are invalid.");
+		body.setProperty("errors", errors);
+		return body;
+	}
+
+	private static Map<String, String> fieldError(String field, String message) {
+		return Map.of("field", field == null ? "request" : field, "message", message == null ? "is invalid" : message);
+	}
+
+	private static String slugFor(HttpStatusCode status) {
+		return switch (status.value()) {
+			case 400 -> "bad-request";
+			case 404 -> "not-found";
+			case 405 -> "method-not-allowed";
+			case 406 -> "not-acceptable";
+			case 415 -> "unsupported-media-type";
+			default -> "http-" + status.value();
+		};
 	}
 
 }

@@ -1,0 +1,70 @@
+{
+  "_id": "fixture-season-1",
+  "air_date": "2021-03-14",
+  "episodes": [
+    {
+      "air_date": "2021-03-21",
+      "episode_number": 2,
+      "episode_type": "standard",
+      "id": 700102,
+      "name": "Low Water",
+      "overview": "",
+      "production_code": "",
+      "runtime": 0,
+      "season_number": 1,
+      "show_id": 90001,
+      "still_path": null,
+      "vote_average": 0,
+      "vote_count": 0,
+      "crew": [],
+      "guest_stars": []
+    },
+    {
+      "air_date": "2021-03-14",
+      "episode_number": 1,
+      "episode_type": "standard",
+      "id": 700101,
+      "name": "Arrival",
+      "overview": "The first invented episode.",
+      "production_code": "",
+      "runtime": 58,
+      "season_number": 1,
+      "show_id": 90001,
+      "still_path": "/still1.jpg",
+      "vote_average": 7.5,
+      "vote_count": 30,
+      "crew": [],
+      "guest_stars": []
+    },
+    {
+      "air_date": "",
+      "episode_number": 3,
+      "episode_type": "standard",
+      "id": 700103,
+      "name": "",
+      "overview": "",
+      "production_code": "",
+      "runtime": null,
+      "season_number": 1,
+      "show_id": 90001,
+      "still_path": null,
+      "vote_average": 0,
+      "vote_count": 0,
+      "crew": [],
+      "guest_stars": []
+    },
+    {
+      "air_date": "2021-04-04",
+      "id": 700199,
+      "name": "Missing episode number",
+      "season_number": 1
+    }
+  ],
+  "name": "Series 1",
+  "networks": [],
+  "overview": "",
+  "id": 8001,
+  "poster_path": "/season1.jpg",
+  "season_number": 1,
+  "vote_average": 7.8
+}

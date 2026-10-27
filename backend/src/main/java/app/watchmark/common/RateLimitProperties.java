@@ -1,4 +1,4 @@
-package app.watchmark.auth;
+package app.watchmark.common;
 
 import java.time.Duration;
 
@@ -12,7 +12,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("watchmark.rate-limit")
 public record RateLimitProperties(@NotNull @Valid Rule loginPerClient, @NotNull @Valid Rule loginPerAccount,
-		@NotNull @Valid Rule registerPerClient, @NotNull @Valid Rule sensitivePerUser) {
+		@NotNull @Valid Rule registerPerClient, @NotNull @Valid Rule sensitivePerUser,
+		@NotNull @Valid Rule searchPerUser) {
 
 	/** At most {@code limit} attempts per fixed {@code window}. */
 	public record Rule(@Positive int limit, @NotNull Duration window) {

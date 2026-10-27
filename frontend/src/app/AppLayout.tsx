@@ -1,11 +1,14 @@
-import { Clapperboard, LogOut } from 'lucide-react'
-import { Link, Outlet, useNavigate } from 'react-router'
+import { Clapperboard, LogOut, Search } from 'lucide-react'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 
 import { Button } from '../components/Button'
 import { buttonClasses } from '../components/buttonStyles'
 import { useCurrentUser, useLogout } from '../features/auth/useAuth'
+import { Attribution } from '../features/catalog/Attribution'
 
 export function AppLayout() {
+  const currentUser = useCurrentUser()
+
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -17,10 +20,13 @@ export function AppLayout() {
 
       <header className="border-b border-line bg-surface/80">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2 rounded-md text-lg font-semibold tracking-tight">
-            <Clapperboard aria-hidden="true" className="size-6 text-accent" />
-            Watchmark
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex items-center gap-2 rounded-md text-lg font-semibold tracking-tight">
+              <Clapperboard aria-hidden="true" className="size-6 text-accent" />
+              Watchmark
+            </Link>
+            {currentUser.data && <MainNav />}
+          </div>
           <AccountNav />
         </div>
       </header>
@@ -29,11 +35,29 @@ export function AppLayout() {
         <Outlet />
       </main>
 
-      {/* The TMDB logo and required notice are added in Milestone 2, when TMDB data is first shown. */}
-      <footer className="border-t border-line py-6 text-center text-sm text-ink-muted">
-        Watchmark is a personal, non-commercial project.
+      <footer className="space-y-3 border-t border-line py-6 text-center text-sm text-ink-muted">
+        <Attribution />
+        <p>Watchmark is a personal, non-commercial project.</p>
       </footer>
     </div>
+  )
+}
+
+function MainNav() {
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    `rounded-md px-2 py-1 text-sm font-medium ${isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'}`
+  return (
+    <nav aria-label="Main" className="flex items-center gap-2">
+      <NavLink to="/discover" className={linkClass}>
+        Discover
+      </NavLink>
+      <NavLink to="/search" className={linkClass}>
+        <span className="flex items-center gap-1">
+          <Search aria-hidden="true" className="size-4" />
+          Search
+        </span>
+      </NavLink>
+    </nav>
   )
 }
 

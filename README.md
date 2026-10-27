@@ -6,7 +6,7 @@ episode you watch. *Watchmark* is a provisional working name.
 > Personal, non-commercial project. Show metadata will come from TMDB under its
 > non-commercial API terms — see [docs/tmdb.md](docs/tmdb.md).
 
-**Status:** Milestone 1 (accounts and authentication). See [docs/roadmap.md](docs/roadmap.md).
+**Status:** Milestone 2 (show discovery and details). See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
@@ -45,6 +45,21 @@ npm run dev
 Open http://localhost:5173 and create an account. Sessions are stored in MySQL,
 so restarting the backend does not sign you out.
 
+Without `TMDB_READ_ACCESS_TOKEN` the app runs on **mock data**: a handful of
+fictional shows, clearly labelled in the UI. To use real data, get a token as
+described in [docs/tmdb.md](docs/tmdb.md) and put it in `.env`.
+
+Optional: set `API_DOCS_ENABLED=true` in `.env` for the OpenAPI document at
+`/v3/api-docs` and Swagger UI at `/swagger-ui.html` on the backend port.
+
+**Port 8080 already taken** (for example by another project's container)? Run
+the backend on another port and point Vite at it:
+
+```sh
+SERVER_PORT=8081 ./mvnw spring-boot:run                    # backend
+WATCHMARK_BACKEND_URL=http://localhost:8081 npm run dev    # frontend
+```
+
 ## Tests
 
 ```sh
@@ -74,7 +89,10 @@ Watchmark/
 | `Access denied for user 'watchmark'` | `.env` passwords changed after the volume was created. MySQL only reads them on first start; reset with `docker compose down -v` (**deletes local data**). |
 | Port 3307 in use | Set another `DB_PORT` in `.env`. |
 | Backend tests fail with `Could not find a valid Docker environment` | Start Docker Desktop. |
-| Frontend shows "Watchmark is unavailable right now" | Backend not running on :8080. |
+| Frontend shows "Watchmark is unavailable right now" | Backend not running on :8080 (or on the port in `WATCHMARK_BACKEND_URL`). |
+| `Web server failed to start. Port 8080 was already in use` | Another process owns 8080; use `SERVER_PORT` as shown above. |
+| `watchmark.metadata.provider=tmdb but TMDB_READ_ACCESS_TOKEN is not set` | Add the token to `.env`, or use `METADATA_PROVIDER=auto` locally. |
+| Shows load but the banner says "Mock data" | No TMDB token configured; see [docs/tmdb.md](docs/tmdb.md). |
 | `403 Invalid CSRF token` when calling the API by hand | Call `GET /api/v1/auth/csrf` first and send the `XSRF-TOKEN` cookie value as `X-XSRF-TOKEN`. |
 | Signed out immediately in production | `SESSION_COOKIE_SECURE=true` requires HTTPS; over plain HTTP the browser drops the cookie. |
 

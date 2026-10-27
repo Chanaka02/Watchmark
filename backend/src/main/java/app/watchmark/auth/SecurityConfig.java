@@ -123,7 +123,11 @@ class SecurityConfig {
 				.permitAll()
 				.requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**")
 				.permitAll()
-				.requestMatchers(HttpMethod.GET, "/api/v1/auth/csrf")
+				.requestMatchers(HttpMethod.GET, "/api/v1/auth/csrf", "/api/v1/catalog/source")
+				.permitAll()
+				// Only served when API_DOCS_ENABLED=true (local development).
+				.requestMatchers(HttpMethod.GET, "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html",
+						"/swagger-ui/**")
 				.permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login")
 				.permitAll()

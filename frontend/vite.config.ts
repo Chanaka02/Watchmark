@@ -21,5 +21,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     restoreMocks: true,
+    // Interaction tests type character by character; leave headroom on slow runners.
+    testTimeout: 15_000,
   },
 })

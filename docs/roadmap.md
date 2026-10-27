@@ -7,7 +7,7 @@ next starts.
 |---|---|---|---|
 | 0 | **Skeleton**: repo, Spring Boot + Vite, MySQL in Compose, Flyway baseline, health check, retention config, CI, docs | Local stack runs end to end; backend and frontend tests pass | ✅ done |
 | 1 | **Authentication**: users, register/login/logout, Spring Session JDBC, CSRF, secure cookies, auth rate limits, problem+json errors, login/register pages | Auth + authorization failure tests pass (401/404 isolation) | ✅ done |
-| 2 | **Metadata**: `MetadataProvider`, mock provider + fixtures, TMDB client (timeouts, 429), discover/search/details API and pages, attribution | Works with mock data; TMDB failure and missing-field tests pass | |
+| 2 | **Metadata**: `MetadataProvider`, mock provider + fixtures, TMDB client (timeouts, 429), discover/search/details API and pages, attribution | Works with mock data; TMDB failure and missing-field tests pass | ✅ done (pending review) |
 | 3 | **Metadata persistence**: store/refresh shows, seasons, episodes; 6-month cache enforcement; upstream-missing episodes (R8) | Refresh never changes user data (tested) | |
 | 4 | **Library**: status, rating, notes; remove keeps history (R10); explicit purge (R11) | Rule tests R1, R10, R11 pass | |
 | 5 | **Episode tracking**: watch/unwatch, season, up-to, undo (R3), eligibility, progress, season states, rewatch, retention purge job (R12), tracker UI | Rule tests R2–R9, R12 pass | |

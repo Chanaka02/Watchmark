@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.watchmark.auth.dto.LoginRequest;
+import app.watchmark.common.RateLimitProperties;
+import app.watchmark.common.RateLimiter;
 import app.watchmark.user.EmailAddresses;
 import app.watchmark.user.User;
 import app.watchmark.user.UserService;

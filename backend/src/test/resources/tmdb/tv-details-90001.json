@@ -1,0 +1,66 @@
+{
+  "adult": false,
+  "backdrop_path": "/fixtureBackdrop1.jpg",
+  "created_by": [],
+  "episode_run_time": [],
+  "first_air_date": "2021-03-14",
+  "genres": [
+    { "id": 18, "name": "Drama" },
+    { "id": 9648, "name": "Mystery" },
+    { "id": 1, "name": "" }
+  ],
+  "homepage": "",
+  "id": 90001,
+  "in_production": true,
+  "languages": ["en"],
+  "last_air_date": "2026-10-20",
+  "last_episode_to_air": {
+    "id": 700203,
+    "name": "The Third Tide",
+    "overview": "",
+    "vote_average": 7.9,
+    "vote_count": 12,
+    "air_date": "2026-10-20",
+    "episode_number": 3,
+    "episode_type": "standard",
+    "production_code": "",
+    "runtime": 52,
+    "season_number": 2,
+    "show_id": 90001,
+    "still_path": null
+  },
+  "name": "Fixture Harbour",
+  "next_episode_to_air": null,
+  "networks": [{ "id": 4, "logo_path": null, "name": "Fixture Broadcasting", "origin_country": "GB" }],
+  "number_of_episodes": 14,
+  "number_of_seasons": 2,
+  "origin_country": ["GB"],
+  "original_language": "en",
+  "original_name": "Fixture Harbour",
+  "overview": "An invented drama used only in tests.",
+  "popularity": 512.7,
+  "poster_path": "/fixturePoster1.jpg",
+  "production_companies": [],
+  "production_countries": [],
+  "seasons": [
+    { "air_date": "2022-01-02", "episode_count": 8, "id": 8002, "name": "Series 2", "overview": "", "poster_path": null, "season_number": 2, "vote_average": 8.3 },
+    { "air_date": "", "episode_count": 2, "id": 8000, "name": "Specials", "overview": "", "poster_path": null, "season_number": 0, "vote_average": 0 },
+    { "air_date": "2021-03-14", "episode_count": 6, "id": 8001, "name": "Series 1", "overview": "", "poster_path": "/season1.jpg", "season_number": 1, "vote_average": 7.8 },
+    { "air_date": null, "episode_count": 0, "id": 8003, "name": null, "overview": "", "poster_path": null, "season_number": 3, "vote_average": 0 }
+  ],
+  "spoken_languages": [],
+  "status": "Returning Series",
+  "tagline": "",
+  "type": "Scripted",
+  "vote_average": 8.1,
+  "vote_count": 1203,
+  "credits": {
+    "cast": [
+      { "id": 3, "name": "Third Billed", "character": "", "profile_path": null, "order": 2 },
+      { "id": 1, "name": "Lead Performer", "character": "Captain Mara Holt", "profile_path": "/lead.jpg", "order": 0 },
+      { "id": 2, "name": "Second Performer", "character": "Jonah", "profile_path": "/second.jpg", "order": 1 },
+      { "id": 4, "name": "", "character": "Nobody", "profile_path": null, "order": 3 }
+    ],
+    "crew": []
+  }
+}

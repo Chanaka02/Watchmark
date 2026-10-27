@@ -1,5 +1,7 @@
 package app.watchmark.common;
 
+import java.time.Duration;
+
 import org.springframework.http.HttpStatus;
 
 /**
@@ -15,11 +17,19 @@ public class ApiException extends RuntimeException {
 
 	private final String title;
 
+	private final Duration retryAfter;
+
 	public ApiException(HttpStatus status, String type, String title, String detail) {
+		this(status, type, title, detail, null);
+	}
+
+	/** @param retryAfter sent as a {@code Retry-After} header when not {@code null} */
+	public ApiException(HttpStatus status, String type, String title, String detail, Duration retryAfter) {
 		super(detail);
 		this.status = status;
 		this.type = type;
 		this.title = title;
+		this.retryAfter = retryAfter;
 	}
 
 	public HttpStatus status() {
@@ -32,6 +42,10 @@ public class ApiException extends RuntimeException {
 
 	public String title() {
 		return title;
+	}
+
+	public Duration retryAfter() {
+		return retryAfter;
 	}
 
 	public static ApiException notFound(String detail) {

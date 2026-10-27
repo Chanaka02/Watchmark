@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.watchmark.auth.AccountSessions;
-import app.watchmark.auth.RateLimitProperties;
-import app.watchmark.auth.RateLimiter;
 import app.watchmark.auth.WatchmarkUserDetails;
+import app.watchmark.common.RateLimitProperties;
+import app.watchmark.common.RateLimiter;
 import app.watchmark.user.dto.ChangePasswordRequest;
 import app.watchmark.user.dto.DeleteAccountRequest;
 import app.watchmark.user.dto.UpdateProfileRequest;

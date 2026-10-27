@@ -18,13 +18,35 @@ Re-check before any public launch or change of business model.
 - The metadata provider is abstracted (`MetadataProvider`), so switching
   providers or moving to a commercial agreement does not affect user data.
 
+## Implementation status (Milestone 2)
+
+- `TmdbMetadataProvider` calls `/trending/tv/week`, `/tv/popular`,
+  `/tv/top_rated`, `/tv/on_the_air`, `/search/tv` (`include_adult=false`),
+  `/tv/{id}?append_to_response=credits` and `/tv/{id}/season/{n}`, with
+  `language=en-US`.
+- Every response field is treated as optional (TMDB's schema marks nothing as
+  nullable). Empty strings and unparsable dates become `null`; entries without
+  ids or episode numbers are dropped; adult titles are excluded.
+- Failures: `404` becomes show/season not found. `429` (honouring
+  `Retry-After`), `5xx`, a rejected token, timeouts (3 s connect, 5 s read) and
+  unreadable JSON become `503 metadata-unavailable`. Upstream details are
+  logged, never returned.
+- Outgoing requests are paced to 20 per second (`RequestPacer`).
+- Responses are cached in memory: lists 1 h, search 15 min, shows and seasons
+  6 h. Failures are not cached.
+- **Tests use hand-written fixtures shaped on the documented schema**
+  (`backend/src/test/resources/tmdb/`), not recordings of the live API. Once a
+  token is available, verify against real responses and add recorded fixtures.
+- Image sizes (`w342`, `w1280`, `w185`, `w300`) are configuration values;
+  confirm them against `/configuration` when a token is available.
+
 ## Obligations and how Watchmark meets them
 
 | Requirement | Implementation (Milestone 2–3) |
 |---|---|
-| Use the TMDB logo, less prominent than Watchmark's own branding | Footer and About page, using TMDB's official logo asset. |
-| Notice: "This product uses the TMDB API but is not endorsed or certified by TMDB." | Footer and About page, verbatim. |
-| Do not cache TMDB content for longer than 6 months | `metadata_synced_at` on every metadata row; refresh job keeps rows under 5 months old and removes untracked stale rows; monitored. |
+| Use the TMDB logo, less prominent than Watchmark's own branding | Footer on every page while TMDB is the active source, using TMDB's official logo (`frontend/public/tmdb-logo.svg`, 12 px high). |
+| Notice: "This product uses the TMDB API but is not endorsed or certified by TMDB." | Footer, verbatim, while TMDB is the active source (not shown for mock data). An About page is planned. |
+| Do not cache TMDB content for longer than 6 months | In-memory caches expire within 6 hours (Milestone 2). From Milestone 3, stored rows carry `metadata_synced_at` and a refresh job keeps them under 5 months old. |
 | Purge all TMDB content if access ends | Metadata tables are separate from personal data and can be truncated. |
 | Do not use TMDB as an image host | Store image paths only; images load from TMDB's CDN. |
 | Rate limits (~40 req/s upper bound, may change; honour 429) | Client-side limit of ~20 req/s, `Retry-After` handling, caching. |

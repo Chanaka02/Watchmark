@@ -16,7 +16,7 @@ flowchart LR
 ```
 
 In development Vite plays the proxy role: `/api` and `/actuator` are forwarded
-to `localhost:8080` (see `frontend/vite.config.ts`).
+to `localhost:8080`, or to `WATCHMARK_BACKEND_URL` (see `frontend/vite.config.ts`).
 
 ## Key decisions
 
@@ -26,6 +26,8 @@ to `localhost:8080` (see `frontend/vite.config.ts`).
 | **Server-side sessions** | Spring Security + Spring Session JDBC with `HttpOnly`, `SameSite=Lax` (and `Secure` in production) cookies and double-submit CSRF tokens. Logout really revokes the session and JavaScript can never read the credential. A future mobile app can get a separate token-based security filter chain over the same controllers. Details: [security.md](security.md). |
 | **Package by feature** | `auth`, `user`, `catalog`, `library`, `tracking`, `calendar`, `stats`, `common`. Each feature holds its own controller, service, repository and DTOs, so tracking logic lives in one place. |
 | **Metadata provider interface** | `catalog` talks to a `MetadataProvider`; `TmdbMetadataProvider` and `MockMetadataProvider` implement it. Shows are keyed by `(provider, external_id)`, so a provider change does not touch user data. |
+| **Metadata selection** | `watchmark.metadata.provider`: `auto` locally (TMDB if a token exists, otherwise mock) and `tmdb` in production, so a missing token fails at startup. Tests are pinned to `mock` through Surefire system properties and never call TMDB. |
+| **Caching** | Caffeine in-memory caches in `CatalogService` (lists 1 h, search 15 min, shows and seasons 6 h); errors are never cached. Single-instance by design, like the rate limiter. |
 | **Flyway owns the schema** | `ddl-auto=validate`; Hibernate never modifies tables. |
 | **UTC everywhere in storage** | `DATETIME(6)` + `Instant`, JDBC session time zone UTC, MySQL server time zone UTC. Conversion to the user's IANA time zone happens only in services that compute "today" and in the UI. |
 | **Real MySQL in tests** | Testcontainers runs `mysql:8.4`, the same version as Compose and production. No H2 dialect differences. |

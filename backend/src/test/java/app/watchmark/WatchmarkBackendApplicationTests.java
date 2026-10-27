@@ -43,6 +43,11 @@ class WatchmarkBackendApplicationTests {
 	}
 
 	@Test
+	void apiDocsAreDisabledByDefault() {
+		assertThat(mvc.get().uri("/v3/api-docs")).hasStatus(HttpStatus.NOT_FOUND);
+	}
+
+	@Test
 	void otherActuatorEndpointsAreNotPublic() {
 		assertThat(mvc.get().uri("/actuator/env")).hasStatus(HttpStatus.UNAUTHORIZED);
 	}

@@ -6,7 +6,12 @@ type Handler = (request: { body: unknown; headers: Headers }) => Response | Prom
  * Routes `fetch` calls by `"METHOD /path"` to handlers. Any request without a
  * handler fails the test loudly instead of surfacing as a vague network error.
  */
-export function mockApi(routes: Record<string, Handler>) {
+export function mockApi(testRoutes: Record<string, Handler>) {
+  // The layout always asks which data source is active; tests may override it.
+  const routes: Record<string, Handler> = {
+    'GET /api/v1/catalog/source': () => json(200, { provider: 'tmdb', mock: false }),
+    ...testRoutes,
+  }
   const unexpected: string[] = []
   const spy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.pathname : input.url

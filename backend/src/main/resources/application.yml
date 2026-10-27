@@ -36,6 +36,14 @@ spring:
       include-stacktrace: never
       include-message: never
 
+# OpenAPI document (/v3/api-docs) and Swagger UI (/swagger-ui.html): off unless
+# API_DOCS_ENABLED=true, which is meant for local development only.
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:false}
+  swagger-ui:
+    enabled: ${API_DOCS_ENABLED:false}
+
 
 management:
   endpoints:
@@ -70,6 +78,28 @@ watchmark:
     sensitive-per-user:
       limit: 10
       window: 15m
+    # Show search, per signed-in user (results are cached, but each new query
+    # costs a provider request).
+    search-per-user:
+      limit: 60
+      window: 1m
+  metadata:
+    # tmdb | mock | auto (auto = tmdb when a token is set, otherwise mock).
+    # Production must use tmdb so a missing token fails fast.
+    provider: ${METADATA_PROVIDER:auto}
+  tmdb:
+    read-access-token: ${TMDB_READ_ACCESS_TOKEN:}
+    base-url: https://api.themoviedb.org/3
+    image-base-url: https://image.tmdb.org/t/p
+    language: en-US
+    connect-timeout: 3s
+    read-timeout: 5s
+    max-requests-per-second: 20
+    # Sizes offered by TMDB's /configuration endpoint; verify there if changed.
+    poster-size: w342
+    backdrop-size: w1280
+    profile-size: w185
+    still-size: w300
   tracking:
     # How long a tracking operation (watch, unwatch, bulk) can be undone.
     undo-window: 24h

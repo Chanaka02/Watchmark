@@ -19,8 +19,17 @@ export function HomePage() {
       <section className="max-w-2xl space-y-4">
         <h1 className="text-3xl font-bold tracking-tight">Welcome back, {currentUser.data.displayName}.</h1>
         <p className="text-ink-muted">
-          Your dashboard with shows in progress and upcoming episodes is coming in a later milestone.
+          Your dashboard with shows in progress and upcoming episodes is coming in a later milestone. For now,
+          explore the catalogue.
         </p>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/discover" className={buttonClasses('primary')}>
+            Discover shows
+          </Link>
+          <Link to="/search" className={buttonClasses('secondary')}>
+            Search
+          </Link>
+        </div>
       </section>
     )
   }

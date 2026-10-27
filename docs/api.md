@@ -1,8 +1,8 @@
 # API contract (v1)
 
-Status: health and all authentication/profile endpoints (Milestone 1) are
-**implemented**; the rest is design. OpenAPI publication is planned with
-Milestone 2.
+Status: health, authentication/profile (Milestone 1) and catalog (Milestone 2)
+endpoints are **implemented**; the rest is design. The generated OpenAPI
+document is served at `/v3/api-docs` when `API_DOCS_ENABLED=true`.
 
 Conventions:
 
@@ -41,10 +41,11 @@ Conventions:
 | `GET /me/profile` · `PATCH /me/profile` | Display name, time zone | 1 ✅ |
 | `PUT /me/password` | Change password; signs out other sessions (`204`) | 1 ✅ |
 | `DELETE /me` | Delete account and all personal data; body `{"password"}` (`204`) | 1 ✅ |
-| `GET /catalog/discover/{list}?page=` | `trending`, `popular`, `top-rated`, `airing` | 2 |
-| `GET /catalog/search?q=&page=` | Search shows | 2 |
-| `GET /catalog/shows/{showRef}` | Show details incl. seasons summary, genres, cast | 2 |
-| `GET /catalog/shows/{showRef}/seasons/{n}` | Season with episodes | 2 |
+| `GET /catalog/source` | Active data source `{provider, mock}`; public | 2 ✅ |
+| `GET /catalog/discover/{list}?page=` | `trending`, `popular`, `top-rated`, `on-the-air`; `page` 1–500 | 2 ✅ |
+| `GET /catalog/search?q=&page=` | Search shows; `q` 1–100 characters; 60 per minute per user | 2 ✅ |
+| `GET /catalog/shows/{showRef}` | Show details incl. seasons summary, genres, cast | 2 ✅ |
+| `GET /catalog/shows/{showRef}/seasons/{n}` | Season with episodes (0 = specials) | 2 ✅ |
 | `GET /library?status=&sort=&page=` | My library (excludes removed) | 4 |
 | `PUT /library/{showRef}` | Add or update status, rating, notes | 4 |
 | `DELETE /library/{showRef}` | Remove, keep history (R10) | 4 |
@@ -123,6 +124,49 @@ X-XSRF-TOKEN: …
 Password change (`PUT /me/password`, `{currentPassword, newPassword}`) and
 account deletion (`DELETE /me`, `{password}`) return `403
 /problems/password-incorrect` when the confirmation password is wrong.
+
+### Catalog
+
+Fields documented as nullable in `CatalogDtos` really are `null` when the
+provider has no value; nothing is invented. Images are absolute URLs or
+`null`. Air dates are calendar dates without a time.
+
+```http
+GET /api/v1/catalog/discover/popular?page=2
+
+200 OK
+{ "items": [ { "ref": "tmdb:90001", "name": "Fixture Harbour", "firstAirDate": "2021-03-14",
+               "overview": "...", "posterUrl": "https://image.tmdb.org/t/p/w342/....jpg",
+               "voteAverage": 8.1 } ],
+  "page": 2, "totalPages": 500, "totalResults": 182390 }
+```
+
+```http
+GET /api/v1/catalog/shows/tmdb:90001/seasons/1
+
+200 OK
+{ "showRef": "tmdb:90001", "seasonNumber": 1, "name": "Series 1", "overview": null,
+  "airDate": "2021-03-14", "posterUrl": "...",
+  "episodes": [ { "externalId": "700101", "seasonNumber": 1, "episodeNumber": 1,
+                  "name": "Arrival", "overview": "...", "airDate": "2021-03-14",
+                  "runtimeMinutes": 58, "stillUrl": "..." },
+                { "externalId": "700103", "seasonNumber": 1, "episodeNumber": 3,
+                  "name": "Episode 3", "overview": null, "airDate": null,
+                  "runtimeMinutes": null, "stillUrl": null } ] }
+```
+
+Provider failure:
+
+```http
+503 Service Unavailable
+Retry-After: 30
+{ "type": "/problems/metadata-unavailable", "title": "Show data unavailable", "status": 503,
+  "detail": "Show information is temporarily unavailable. Please try again shortly." }
+```
+
+Other catalog problems: `404 /problems/show-not-found` (also for malformed or
+other-provider refs), `404 /problems/season-not-found`, and `400
+/problems/validation-failed` (bad `page`, `q` or season number).
 
 ### Mark an episode watched
 

@@ -1,0 +1,50 @@
+{
+  "page": 2,
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/fixtureBackdrop1.jpg",
+      "genre_ids": [18, 9648],
+      "id": 90001,
+      "origin_country": ["GB"],
+      "original_language": "en",
+      "original_name": "Fixture Harbour",
+      "overview": "  An invented drama used only in tests.  ",
+      "popularity": 512.7,
+      "poster_path": "/fixturePoster1.jpg",
+      "first_air_date": "2021-03-14",
+      "name": "Fixture Harbour",
+      "vote_average": 8.1,
+      "vote_count": 1203
+    },
+    {
+      "adult": false,
+      "backdrop_path": null,
+      "genre_ids": [],
+      "id": 90002,
+      "origin_country": [],
+      "original_language": "ja",
+      "original_name": "Tesuto Bangumi",
+      "overview": "",
+      "popularity": 33.1,
+      "poster_path": null,
+      "first_air_date": "",
+      "name": "",
+      "vote_average": 0,
+      "vote_count": 0
+    },
+    {
+      "adult": true,
+      "id": 90003,
+      "name": "Adult Fixture",
+      "poster_path": "/adult.jpg",
+      "first_air_date": "2020-01-01"
+    },
+    {
+      "name": "Fixture Without Id",
+      "first_air_date": "2019-05-05"
+    }
+  ],
+  "total_pages": 9120,
+  "total_results": 182390
+}

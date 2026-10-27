@@ -1,4 +1,4 @@
-package app.watchmark.auth;
+package app.watchmark.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -10,8 +10,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
 import app.watchmark.MutableClock;
-import app.watchmark.auth.RateLimitProperties.Rule;
-import app.watchmark.common.RateLimitExceededException;
+import app.watchmark.common.RateLimitProperties.Rule;
 
 class RateLimiterTests {
 
