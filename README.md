@@ -6,14 +6,14 @@ episode you watch. *Watchmark* is a provisional working name.
 > Personal, non-commercial project. Show metadata will come from TMDB under its
 > non-commercial API terms — see [docs/tmdb.md](docs/tmdb.md).
 
-**Status:** Milestone 0 (project skeleton). See [docs/roadmap.md](docs/roadmap.md).
+**Status:** Milestone 1 (accounts and authentication). See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, TypeScript, Vite 8, React Router 8, TanStack Query 5, Tailwind CSS 4, Lucide |
-| Backend | Java 25 (LTS), Spring Boot 4.1, Spring Web MVC, Spring Data JPA, Bean Validation, Flyway |
+| Frontend | React 19, TypeScript, Vite 8, React Router 8, TanStack Query 5, React Hook Form + Zod, Tailwind CSS 4, Lucide |
+| Backend | Java 25 (LTS), Spring Boot 4.1, Spring Web MVC, Spring Security 7, Spring Session JDBC, Spring Data JPA, Bean Validation, Flyway |
 | Database | MySQL 8.4 LTS |
 | Tests | JUnit 5, Testcontainers (real MySQL), Vitest, React Testing Library |
 | CI | GitHub Actions |
@@ -42,8 +42,8 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. The home page reports whether the backend and its
-database are reachable.
+Open http://localhost:5173 and create an account. Sessions are stored in MySQL,
+so restarting the backend does not sign you out.
 
 ## Tests
 
@@ -74,7 +74,9 @@ Watchmark/
 | `Access denied for user 'watchmark'` | `.env` passwords changed after the volume was created. MySQL only reads them on first start; reset with `docker compose down -v` (**deletes local data**). |
 | Port 3307 in use | Set another `DB_PORT` in `.env`. |
 | Backend tests fail with `Could not find a valid Docker environment` | Start Docker Desktop. |
-| Frontend shows "Backend unavailable" | Backend not running on :8080. |
+| Frontend shows "Watchmark is unavailable right now" | Backend not running on :8080. |
+| `403 Invalid CSRF token` when calling the API by hand | Call `GET /api/v1/auth/csrf` first and send the `XSRF-TOKEN` cookie value as `X-XSRF-TOKEN`. |
+| Signed out immediately in production | `SESSION_COOKIE_SECURE=true` requires HTTPS; over plain HTTP the browser drops the cookie. |
 
 ## Documentation
 
@@ -82,5 +84,6 @@ Watchmark/
 - [Data model and ER diagram](docs/data-model.md)
 - [API contract](docs/api.md)
 - [Tracking rules](docs/tracking-rules.md)
+- [Security](docs/security.md)
 - [TMDB usage and attribution](docs/tmdb.md)
 - [Roadmap](docs/roadmap.md)

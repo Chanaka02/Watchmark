@@ -1,13 +1,15 @@
 # API contract (v1)
 
-Status: **design**. Only `GET /actuator/health` exists today. The contract is
-published as OpenAPI from the milestone each endpoint is built in.
+Status: health and all authentication/profile endpoints (Milestone 1) are
+**implemented**; the rest is design. OpenAPI publication is planned with
+Milestone 2.
 
 Conventions:
 
 - Base path `/api/v1`, JSON, same origin as the SPA.
-- Authentication: session cookie. State-changing requests need the CSRF token
-  header (Milestone 1).
+- Authentication: `WMSESSION` session cookie. State-changing requests must send
+  the `XSRF-TOKEN` cookie value in an `X-XSRF-TOKEN` header (see
+  [security.md](security.md)).
 - The current user always comes from the session. Routes under `/me`,
   `/library` and `/tracking` never take a user id.
 - `showRef` = provider-qualified id, e.g. `tmdb:1399`.
@@ -18,7 +20,8 @@ Conventions:
 | Status | Meaning |
 |---|---|
 | 400 | Malformed request / validation failure (with `errors[]`) |
-| 401 | Not authenticated |
+| 401 | Not authenticated, or invalid credentials on login |
+| 403 | CSRF token missing/invalid; password confirmation incorrect |
 | 404 | Not found **or** belongs to another user |
 | 409 | Conflict (undo expired, already undone, conflicting watch) |
 | 422 | Business rule rejected (episode not aired, wrong purge confirmation) |
@@ -30,14 +33,14 @@ Conventions:
 | Method & path | Purpose | M |
 |---|---|---|
 | `GET /actuator/health` | Liveness (status only) | 0 ✅ |
-| `GET /auth/csrf` | Obtain CSRF token | 1 |
-| `POST /auth/register` | Create account | 1 |
-| `POST /auth/login` | Start session | 1 |
-| `POST /auth/logout` | End session | 1 |
-| `GET /auth/me` | Current user or 401 | 1 |
-| `GET /me/profile` · `PATCH /me/profile` | Display name, time zone | 1 |
-| `PUT /me/password` | Change password (current required) | 1 |
-| `DELETE /me` | Delete account and all personal data (password required) | 1 |
+| `GET /auth/csrf` | Set the `XSRF-TOKEN` cookie (`204`) | 1 ✅ |
+| `POST /auth/register` | Create account and sign in (`201`) | 1 ✅ |
+| `POST /auth/login` | Start session | 1 ✅ |
+| `POST /auth/logout` | End session (`204`) | 1 ✅ |
+| `GET /auth/me` | Current user or `401` | 1 ✅ |
+| `GET /me/profile` · `PATCH /me/profile` | Display name, time zone | 1 ✅ |
+| `PUT /me/password` | Change password; signs out other sessions (`204`) | 1 ✅ |
+| `DELETE /me` | Delete account and all personal data; body `{"password"}` (`204`) | 1 ✅ |
 | `GET /catalog/discover/{list}?page=` | `trending`, `popular`, `top-rated`, `airing` | 2 |
 | `GET /catalog/search?q=&page=` | Search shows | 2 |
 | `GET /catalog/shows/{showRef}` | Show details incl. seasons summary, genres, cast | 2 |
@@ -62,14 +65,64 @@ Conventions:
 
 ### Register
 
+Password: 15+ characters, at most 72 bytes. `timeZone`: IANA region id.
+
 ```http
+GET /api/v1/auth/csrf
+204 No Content
+Set-Cookie: XSRF-TOKEN=…; Path=/; SameSite=Lax
+
 POST /api/v1/auth/register
+X-XSRF-TOKEN: …
 { "email": "ana@example.com", "password": "correct horse battery staple",
   "displayName": "Ana", "timeZone": "Asia/Colombo" }
 
 201 Created
+Set-Cookie: WMSESSION=…; Max-Age=2592000; Path=/; HttpOnly; SameSite=Lax
 { "id": 42, "email": "ana@example.com", "displayName": "Ana", "timeZone": "Asia/Colombo" }
 ```
+
+Validation failure:
+
+```http
+400 Bad Request
+Content-Type: application/problem+json
+{ "type": "/problems/validation-failed", "title": "Validation failed", "status": 400,
+  "detail": "One or more fields are invalid.",
+  "errors": [ { "field": "password", "message": "must be at least 15 characters and at most 72 bytes" } ] }
+```
+
+Other outcomes: `409 /problems/email-taken`, `429 /problems/rate-limited`
+(with `Retry-After`).
+
+### Login
+
+```http
+POST /api/v1/auth/login
+X-XSRF-TOKEN: …
+{ "email": "ana@example.com", "password": "correct horse battery staple" }
+
+200 OK   (new WMSESSION cookie; same body as register)
+
+401 Unauthorized
+{ "type": "/problems/invalid-credentials", "title": "Invalid credentials", "status": 401,
+  "detail": "The email or password is incorrect." }
+```
+
+### Update profile
+
+```http
+PATCH /api/v1/me/profile
+X-XSRF-TOKEN: …
+{ "timeZone": "Europe/London" }          (omitted fields are unchanged)
+
+200 OK
+{ "id": 42, "email": "ana@example.com", "displayName": "Ana", "timeZone": "Europe/London" }
+```
+
+Password change (`PUT /me/password`, `{currentPassword, newPassword}`) and
+account deletion (`DELETE /me`, `{password}`) return `403
+/problems/password-incorrect` when the confirmation password is wrong.
 
 ### Mark an episode watched
 

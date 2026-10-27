@@ -1,5 +1,9 @@
-import { Clapperboard } from 'lucide-react'
-import { Link, Outlet } from 'react-router'
+import { Clapperboard, LogOut } from 'lucide-react'
+import { Link, Outlet, useNavigate } from 'react-router'
+
+import { Button } from '../components/Button'
+import { buttonClasses } from '../components/buttonStyles'
+import { useCurrentUser, useLogout } from '../features/auth/useAuth'
 
 export function AppLayout() {
   return (
@@ -12,11 +16,12 @@ export function AppLayout() {
       </a>
 
       <header className="border-b border-line bg-surface/80">
-        <div className="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2 rounded-md text-lg font-semibold tracking-tight">
             <Clapperboard aria-hidden="true" className="size-6 text-accent" />
             Watchmark
           </Link>
+          <AccountNav />
         </div>
       </header>
 
@@ -29,5 +34,36 @@ export function AppLayout() {
         Watchmark is a personal, non-commercial project.
       </footer>
     </div>
+  )
+}
+
+function AccountNav() {
+  const navigate = useNavigate()
+  const currentUser = useCurrentUser()
+  const logout = useLogout()
+
+  if (currentUser.isPending || currentUser.isError) {
+    return null
+  }
+  if (!currentUser.data) {
+    return (
+      <nav aria-label="Account" className="flex items-center gap-2">
+        <Link to="/login" className={buttonClasses('ghost')}>
+          Sign in
+        </Link>
+        <Link to="/register" className={buttonClasses('primary')}>
+          Create account
+        </Link>
+      </nav>
+    )
+  }
+  return (
+    <nav aria-label="Account" className="flex items-center gap-3">
+      <span className="hidden text-sm text-ink-muted sm:inline">{currentUser.data.displayName}</span>
+      <Button variant="ghost" pending={logout.isPending} onClick={() => logout.mutate(undefined, { onSettled: () => navigate('/') })}>
+        <LogOut aria-hidden="true" className="size-4" />
+        Sign out
+      </Button>
+    </nav>
   )
 }

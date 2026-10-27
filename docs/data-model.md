@@ -1,7 +1,8 @@
 # Data model
 
-Status: **design**. Only `V1__baseline` exists; tables are created by the
-milestone that first needs them (see the last column below).
+Status: `users` and the Spring Session tables exist (V2, V3); the rest is
+design. Tables are created by the milestone that first needs them (see the
+last column below).
 
 ## ER diagram (MVP)
 
@@ -110,8 +111,8 @@ erDiagram
 
 | Table | Kind | Purpose | Milestone |
 |---|---|---|---|
-| `users` | personal | Account, password hash, time zone | 1 |
-| `SPRING_SESSION`, `SPRING_SESSION_ATTRIBUTES` | infra | Server-side sessions (Spring Session JDBC MySQL schema) | 1 |
+| `users` | personal | Account, password hash, time zone | 1 ✅ |
+| `SPRING_SESSION`, `SPRING_SESSION_ATTRIBUTES` | infra | Server-side sessions (Spring Session JDBC MySQL schema) | 1 ✅ |
 | `shows`, `seasons`, `episodes`, `genres`, `show_genres` | metadata | Cached provider data; refreshable | 3 |
 | `user_shows` | personal | Library entry: status, rating, notes, cycle, removed flag | 4 |
 | `tracking_operations` | personal | One row per tracking action, for undo | 5 |
@@ -124,7 +125,7 @@ erDiagram
 
 | Table | Constraint |
 |---|---|
-| `users` | UNIQUE `email` (application lowercases before insert) |
+| `users` | UNIQUE `email`; column collation `utf8mb4_0900_as_ci` (case-insensitive, accent-sensitive); the application also lowercases before insert |
 | `shows` | UNIQUE `(provider, external_id)` |
 | `seasons` | UNIQUE `(show_id, season_number)` |
 | `episodes` | UNIQUE `(show_id, season_number, episode_number)`; INDEX `air_date` |

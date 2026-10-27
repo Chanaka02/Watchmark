@@ -23,7 +23,7 @@ to `localhost:8080` (see `frontend/vite.config.ts`).
 | Decision | Why |
 |---|---|
 | **Same origin for SPA and API** | Session cookies stay first-party (`SameSite=Lax`), no CORS configuration is needed, and CSRF protection is straightforward. |
-| **Server-side sessions** (Milestone 1) | Spring Security + Spring Session JDBC with `HttpOnly`, `Secure` cookies and CSRF tokens. Logout really revokes the session and JavaScript can never read the credential. A future mobile app can get a separate token-based security filter chain over the same controllers. |
+| **Server-side sessions** | Spring Security + Spring Session JDBC with `HttpOnly`, `SameSite=Lax` (and `Secure` in production) cookies and double-submit CSRF tokens. Logout really revokes the session and JavaScript can never read the credential. A future mobile app can get a separate token-based security filter chain over the same controllers. Details: [security.md](security.md). |
 | **Package by feature** | `auth`, `user`, `catalog`, `library`, `tracking`, `calendar`, `stats`, `common`. Each feature holds its own controller, service, repository and DTOs, so tracking logic lives in one place. |
 | **Metadata provider interface** | `catalog` talks to a `MetadataProvider`; `TmdbMetadataProvider` and `MockMetadataProvider` implement it. Shows are keyed by `(provider, external_id)`, so a provider change does not touch user data. |
 | **Flyway owns the schema** | `ddl-auto=validate`; Hibernate never modifies tables. |

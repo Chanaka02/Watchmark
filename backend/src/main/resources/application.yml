@@ -22,11 +22,20 @@ spring:
           time_zone: UTC
   flyway:
     locations: classpath:db/migration
+  session:
+    # Idle timeout: a session unused for this long expires on the server.
+    timeout: ${SESSION_TIMEOUT:14d}
+    jdbc:
+      # Tables are created by Flyway (V3__create_spring_session.sql).
+      initialize-schema: never
+  mvc:
+    problemdetails:
+      enabled: true
+  web:
+    error:
+      include-stacktrace: never
+      include-message: never
 
-server:
-  error:
-    include-stacktrace: never
-    include-message: never
 
 management:
   endpoints:
@@ -38,6 +47,29 @@ management:
       show-details: never
 
 watchmark:
+  security:
+    # Secure attribute on the WMSESSION and XSRF-TOKEN cookies. Must be true in
+    # production (HTTPS); false only for local http://localhost development.
+    cookie-secure: ${SESSION_COOKIE_SECURE:false}
+    # Browser lifetime of the session cookie (the server idle timeout still applies).
+    session-cookie-max-age: 30d
+  rate-limit:
+    # Per client IP, across all accounts.
+    login-per-client:
+      limit: 30
+      window: 5m
+    # Per client IP and email pair; keyed by both so a remote attacker cannot
+    # lock a victim out of their account from elsewhere.
+    login-per-account:
+      limit: 5
+      window: 5m
+    register-per-client:
+      limit: 5
+      window: 1h
+    # Password change and account deletion, per signed-in user.
+    sensitive-per-user:
+      limit: 10
+      window: 15m
   tracking:
     # How long a tracking operation (watch, unwatch, bulk) can be undone.
     undo-window: 24h

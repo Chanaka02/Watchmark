@@ -23,14 +23,14 @@ class WatchmarkBackendApplicationTests {
 	MockMvcTester mvc;
 
 	@Test
-	void flywayAppliesBaselineAgainstMysql() {
+	void flywayAppliesAllMigrationsAgainstMysql() {
 		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("1");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
 		assertThat(flyway.info().pending()).isEmpty();
 	}
 
 	@Test
-	void healthEndpointIsUpAndHidesDetails() {
+	void healthEndpointIsPublicUpAndHidesDetails() {
 		// Probe group names ("liveness", "readiness") may be listed; component
 		// details such as the database must never be exposed anonymously.
 		assertThat(mvc.get().uri("/actuator/health")).hasStatusOk()
@@ -43,8 +43,8 @@ class WatchmarkBackendApplicationTests {
 	}
 
 	@Test
-	void onlyHealthActuatorEndpointIsExposed() {
-		assertThat(mvc.get().uri("/actuator/env")).hasStatus(HttpStatus.NOT_FOUND);
+	void otherActuatorEndpointsAreNotPublic() {
+		assertThat(mvc.get().uri("/actuator/env")).hasStatus(HttpStatus.UNAUTHORIZED);
 	}
 
 }
