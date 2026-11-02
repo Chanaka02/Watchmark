@@ -1,9 +1,11 @@
 package app.watchmark.catalog.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -49,12 +52,66 @@ class MetadataRefreshJobTests {
 	@Autowired
 	JdbcTemplate jdbc;
 
+	private long userId;
+
 	@BeforeEach
 	void setUp() {
+		jdbc.update("DELETE FROM user_shows");
 		jdbc.update("DELETE FROM shows");
+		jdbc.update("DELETE FROM users WHERE email = 'refresh-job@example.com'");
+		jdbc.update("INSERT INTO users (email, display_name, password_hash, time_zone, created_at, updated_at) "
+				+ "VALUES ('refresh-job@example.com', 'Job', '{noop}x', 'UTC', ?, ?)", Timestamp.from(NOW),
+				Timestamp.from(NOW));
+		userId = jdbc.queryForObject("SELECT id FROM users WHERE email = 'refresh-job@example.com'", Long.class);
 		provider.reset();
 		clock.set(NOW);
 	}
+
+	// --- Unreferenced shows ------------------------------------------------------------------------
+
+	@Test
+	void unreferencedShowsAreDeletedInsteadOfRefreshed() {
+		storeUnreferenced("orphan", ShowStatus.RETURNING);
+		store("kept", ShowStatus.RETURNING);
+		clock.advance(Duration.ofDays(1));
+
+		MetadataRefreshJob.Report report = job.runOnce();
+
+		assertThat(report.deleted()).isEqualTo(1);
+		assertThat(shows.findByProviderAndExternalId("tmdb", "orphan")).isEmpty();
+		assertThat(count("SELECT COUNT(*) FROM episodes e JOIN shows s ON s.id = e.show_id WHERE s.external_id = 'orphan'"))
+			.as("seasons and episodes cascade")
+			.isZero();
+		assertThat(report.refreshed()).as("only the referenced show is refreshed").isEqualTo(1);
+	}
+
+	@Test
+	void recentlyStoredUnreferencedShowsAreKept() {
+		storeUnreferenced("just-added", ShowStatus.RETURNING);
+		clock.advance(Duration.ofMinutes(30));
+
+		assertThat(job.runOnce().deleted()).isZero();
+		assertThat(shows.findByProviderAndExternalId("tmdb", "just-added")).isPresent();
+	}
+
+	@Test
+	void showsInARemovedLibraryEntryAreStillReferenced() {
+		store("removed", ShowStatus.ENDED);
+		jdbc.update("UPDATE user_shows SET removed_at = ? WHERE user_id = ?", Timestamp.from(NOW), userId);
+		clock.advance(Duration.ofDays(2));
+
+		assertThat(job.runOnce().deleted()).as("history must survive removal (R10)").isZero();
+	}
+
+	@Test
+	void databaseRefusesToDeleteAReferencedShow() {
+		store("referenced", ShowStatus.ENDED);
+
+		assertThatThrownBy(() -> jdbc.update("DELETE FROM shows WHERE external_id = 'referenced'"))
+			.isInstanceOf(DataIntegrityViolationException.class);
+	}
+
+	// --- Refresh -----------------------------------------------------------------------------------
 
 	@Test
 	void airingShowsAreRefreshedDailyAndFinishedOnesMonthly() {
@@ -142,7 +199,15 @@ class MetadataRefreshJobTests {
 		assertThat(due).containsExactly("1", "2");
 	}
 
+	/** Stores the show and references it from a library entry, like a real add. */
 	private void store(String id, ShowStatus status) {
+		storeUnreferenced(id, status);
+		jdbc.update("INSERT INTO user_shows (user_id, show_id, status, added_at, updated_at) "
+				+ "VALUES (?, ?, 'WATCHING', ?, ?)", userId, stored(id).getId(), Timestamp.from(NOW),
+				Timestamp.from(NOW));
+	}
+
+	private void storeUnreferenced(String id, ShowStatus status) {
 		EpisodeInfo episode = new EpisodeInfo(id + "-e1", 1, 1, "Episode 1", null, LocalDate.of(2026, 10, 1), 30,
 				null);
 		provider.shows.put(id, new ShowDetails("tmdb:" + id, "Show " + id, null, null, null, status, null, null, null,
@@ -151,6 +216,10 @@ class MetadataRefreshJobTests {
 		provider.seasons.put(id + "/1",
 				new SeasonDetails("tmdb:" + id, 1, "Season 1", null, null, null, List.of(episode)));
 		sync.sync(new ShowRef("tmdb", id));
+	}
+
+	private int count(String sql) {
+		return jdbc.queryForObject(sql, Integer.class);
 	}
 
 	private Show stored(String id) {

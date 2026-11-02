@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { details, episode, signedInRoutes } from '../test/catalogFixtures'
+import { details, episode, notInLibrary, signedInRoutes } from '../test/catalogFixtures'
 import { json, mockApi, problem } from '../test/mockApi'
 import { renderRoute } from '../test/renderRoute'
 
@@ -16,6 +16,8 @@ describe('ShowPage', () => {
   it('renders details, putting specials after regular seasons', async () => {
     mockApi({
       ...signedInRoutes(),
+      'GET /api/v1/library/tmdb%3A1': notInLibrary,
+      'GET /api/v1/library/tmdb%3A404': notInLibrary,
       'GET /api/v1/catalog/shows/tmdb%3A1': () =>
         json(
           200,
@@ -57,6 +59,8 @@ describe('ShowPage', () => {
   it('shows the next episode with its release status', async () => {
     mockApi({
       ...signedInRoutes(),
+      'GET /api/v1/library/tmdb%3A1': notInLibrary,
+      'GET /api/v1/library/tmdb%3A404': notInLibrary,
       'GET /api/v1/catalog/shows/tmdb%3A1': () =>
         json(200, details({ nextEpisode: episode(5, { seasonNumber: 2, airDate: '2026-11-04' }) })),
     })
@@ -69,6 +73,8 @@ describe('ShowPage', () => {
   it('handles a show with almost no metadata', async () => {
     mockApi({
       ...signedInRoutes(),
+      'GET /api/v1/library/tmdb%3A1': notInLibrary,
+      'GET /api/v1/library/tmdb%3A404': notInLibrary,
       'GET /api/v1/catalog/shows/tmdb%3A1': () =>
         json(200, details({ overview: null, firstAirDate: null, genres: [], seasons: [], status: 'PLANNED' })),
     })
@@ -81,6 +87,8 @@ describe('ShowPage', () => {
   it('reports a missing show', async () => {
     mockApi({
       ...signedInRoutes(),
+      'GET /api/v1/library/tmdb%3A1': notInLibrary,
+      'GET /api/v1/library/tmdb%3A404': notInLibrary,
       'GET /api/v1/catalog/shows/tmdb%3A404': () => problem(404, 'show-not-found', 'This show could not be found.'),
     })
     renderRoute('/shows/tmdb:404')
@@ -92,6 +100,8 @@ describe('ShowPage', () => {
   it('offers a retry when the provider is unavailable', async () => {
     mockApi({
       ...signedInRoutes(),
+      'GET /api/v1/library/tmdb%3A1': notInLibrary,
+      'GET /api/v1/library/tmdb%3A404': notInLibrary,
       'GET /api/v1/catalog/shows/tmdb%3A1': () => problem(503, 'metadata-unavailable', 'Temporarily unavailable.'),
     })
     renderRoute('/shows/tmdb:1')

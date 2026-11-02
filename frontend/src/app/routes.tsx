@@ -5,6 +5,7 @@ import { RedirectIfSignedIn } from '../features/auth/RedirectIfSignedIn'
 import { RequireAuth } from '../features/auth/RequireAuth'
 import { DiscoverPage } from '../pages/DiscoverPage'
 import { HomePage } from '../pages/HomePage'
+import { LibraryPage } from '../pages/LibraryPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RegisterPage } from '../pages/RegisterPage'
@@ -25,6 +26,7 @@ export const routes: RouteObject[] = [
       { path: 'login', element: signedOut(<LoginPage />) },
       { path: 'register', element: signedOut(<RegisterPage />) },
       { path: 'discover', element: signedIn(<DiscoverPage />) },
+      { path: 'library', element: signedIn(<LibraryPage />) },
       { path: 'search', element: signedIn(<SearchPage />) },
       { path: 'shows/:ref', element: signedIn(<ShowPage />) },
       { path: 'shows/:ref/seasons/:seasonNumber', element: signedIn(<SeasonPage />) },

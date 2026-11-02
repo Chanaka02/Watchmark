@@ -23,7 +23,10 @@ export function HomePage() {
           explore the catalogue.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link to="/discover" className={buttonClasses('primary')}>
+          <Link to="/library" className={buttonClasses('primary')}>
+            My library
+          </Link>
+          <Link to="/discover" className={buttonClasses('secondary')}>
             Discover shows
           </Link>
           <Link to="/search" className={buttonClasses('secondary')}>

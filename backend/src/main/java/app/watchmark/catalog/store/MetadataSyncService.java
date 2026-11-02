@@ -41,15 +41,35 @@ public class MetadataSyncService {
 
 	private final MetadataWriter writer;
 
+	private final ShowRepository shows;
+
 	private final RefreshProperties properties;
 
 	private final Clock clock;
 
-	MetadataSyncService(MetadataProvider provider, MetadataWriter writer, RefreshProperties properties, Clock clock) {
+	MetadataSyncService(MetadataProvider provider, MetadataWriter writer, ShowRepository shows,
+			RefreshProperties properties, Clock clock) {
 		this.provider = provider;
 		this.writer = writer;
+		this.shows = shows;
 		this.properties = properties;
 		this.clock = clock;
+	}
+
+	/**
+	 * The stored show id, syncing the show first if it has never been stored.
+	 * Already-stored shows are not refreshed here; the refresh job keeps them current.
+	 *
+	 * @throws MetadataNotFoundException unknown show, or a ref of another provider
+	 * @throws MetadataUnavailableException the provider failed
+	 */
+	public long ensureStored(ShowRef ref) {
+		if (!ref.provider().equals(provider.id())) {
+			throw MetadataNotFoundException.show();
+		}
+		return shows.findByProviderAndExternalId(ref.provider(), ref.externalId())
+			.map(Show::getId)
+			.orElseGet(() -> sync(ref).showId());
 	}
 
 	/**

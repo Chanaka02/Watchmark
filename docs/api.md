@@ -1,7 +1,7 @@
 # API contract (v1)
 
-Status: health, authentication/profile (Milestone 1) and catalog (Milestone 2)
-endpoints are **implemented**; the rest is design. The generated OpenAPI
+Status: health, authentication/profile (Milestone 1), catalog (Milestone 2)
+and library (Milestone 4) endpoints are **implemented**; the rest is design. The generated OpenAPI
 document is served at `/v3/api-docs` when `API_DOCS_ENABLED=true`.
 
 Conventions:
@@ -46,10 +46,13 @@ Conventions:
 | `GET /catalog/search?q=&page=` | Search shows; `q` 1–100 characters; 60 per minute per user | 2 ✅ |
 | `GET /catalog/shows/{showRef}` | Show details incl. seasons summary, genres, cast | 2 ✅ |
 | `GET /catalog/shows/{showRef}/seasons/{n}` | Season with episodes (0 = specials) | 2 ✅ |
-| `GET /library?status=&sort=&page=` | My library (excludes removed) | 4 |
-| `PUT /library/{showRef}` | Add or update status, rating, notes | 4 |
-| `DELETE /library/{showRef}` | Remove, keep history (R10) | 4 |
-| `POST /library/{showRef}/purge` | Permanently delete my data for show (R11) | 4 |
+| `GET /library?status=&sort=` | My library (excludes removed); `sort` = `RECENT` (default), `TITLE`, `ADDED`; includes counts per status | 4 ✅ |
+| `GET /library/{showRef}` | My entry for one show; `404 not-in-library` when absent or removed | 4 ✅ |
+| `PUT /library/{showRef}` | `{status}`: add (`201`), change or restore a removed entry (`200`) | 4 ✅ |
+| `PUT /library/{showRef}/rating` | `{rating: 1–10 \| null}` | 4 ✅ |
+| `PUT /library/{showRef}/notes` | `{notes: string \| null}`, at most 2000 characters; blank clears | 4 ✅ |
+| `DELETE /library/{showRef}` | Remove, keep history, rating and notes (R10) (`204`) | 4 ✅ |
+| `POST /library/{showRef}/purge` | `{confirmName}`: permanently delete my data for the show (R11) (`204`) | 4 ✅ |
 | `POST /library/{showRef}/rewatch` | Start a new cycle | 5 |
 | `GET /library/{showRef}/progress` | Per-season progress, next episode | 5 |
 | `PUT /tracking/episodes/{episodeId}/watch` | Mark watched (idempotent) | 5 |
@@ -167,6 +170,46 @@ Retry-After: 30
 Other catalog problems: `404 /problems/show-not-found` (also for malformed or
 other-provider refs), `404 /problems/season-not-found`, and `400
 /problems/validation-failed` (bad `page`, `q` or season number).
+
+### Library
+
+Rating and notes have their own endpoints so "clear" (`null`) is never
+confused with "leave unchanged". Adding a show stores its metadata first if no
+user has added it before; a provider outage then returns `503` and nothing is
+created.
+
+```http
+PUT /api/v1/library/tmdb:1399
+X-XSRF-TOKEN: ...
+{ "status": "WATCHING" }
+
+201 Created
+{ "show": { "ref": "tmdb:1399", "name": "...", "posterUrl": "...", "firstAirDate": "2011-04-17",
+            "status": "ENDED" },
+  "status": "WATCHING", "rating": null, "notes": null, "cycle": 1,
+  "addedAt": "2026-11-02T10:00:00Z", "updatedAt": "2026-11-02T10:00:00Z" }
+```
+
+```http
+GET /api/v1/library?status=WATCHING&sort=TITLE
+
+200 OK
+{ "entries": [ { ...same shape as above... } ],
+  "counts": { "PLAN_TO_WATCH": 0, "WATCHING": 2, "COMPLETED": 1, "ON_HOLD": 0, "DROPPED": 0 } }
+```
+
+```http
+POST /api/v1/library/tmdb:1399/purge
+{ "confirmName": "Wrong name" }
+
+422 Unprocessable Content
+{ "type": "/problems/confirmation-mismatch", "title": "Confirmation does not match", "status": 422,
+  "detail": "Type the show's name exactly as shown to confirm." }
+```
+
+Other library problems: `404 /problems/not-in-library`, `404
+/problems/show-not-found`, `409 /problems/concurrent-update` (the entry changed
+at the same time elsewhere), `400 /problems/validation-failed`.
 
 ### Mark an episode watched
 

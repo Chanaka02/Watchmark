@@ -47,7 +47,7 @@ Re-check before any public launch or change of business model.
 | Use the TMDB logo, less prominent than Watchmark's own branding | Footer on every page while TMDB is the active source, using TMDB's official logo (`frontend/public/tmdb-logo.svg`, 12 px high). |
 | Notice: "This product uses the TMDB API but is not endorsed or certified by TMDB." | Footer, verbatim, while TMDB is the active source (not shown for mock data). An About page is planned. |
 | Do not cache TMDB content for longer than 6 months | In-memory caches expire within 6 hours. Stored shows carry `metadata_synced_at`; a daily job (03:30 UTC) refreshes airing shows after 20 h, finished or removed shows after 30 days, and **anything** after 150 days. Seasons are re-fetched at least every 30 days. Shows that still cannot be refreshed after 150 days are logged at ERROR level so an operator can act before the limit. The configuration refuses a `hard-max-age` closer than 14 days to six months. |
-| Purge all TMDB content if access ends | Metadata tables are separate from personal data and can be truncated. |
+| Purge all TMDB content if access ends | Metadata tables are separate from personal data. Stored shows no user references any more are deleted by the daily job, so only shows someone tracks are kept. |
 | Do not use TMDB as an image host | Store image paths only; images load from TMDB's CDN. |
 | Rate limits (~40 req/s upper bound, may change; honour 429) | Client-side limit of ~20 req/s, `Retry-After` handling, caching. |
 

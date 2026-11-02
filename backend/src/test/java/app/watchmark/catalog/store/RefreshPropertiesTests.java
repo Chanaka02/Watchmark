@@ -28,7 +28,7 @@ class RefreshPropertiesTests {
 
 	@Test
 	void seasonFetchDecision() {
-		var service = new MetadataSyncService(null, null, withHardMaxAge(Duration.ofDays(150)), null);
+		var service = new MetadataSyncService(null, null, null, withHardMaxAge(Duration.ofDays(150)), null);
 		Instant now = Instant.parse("2026-11-02T10:00:00Z");
 		SeasonSummary season = new SeasonSummary(1, "Season 1", 8, LocalDate.of(2020, 1, 1), null);
 		SeasonState stable = new SeasonState(8, now.minus(Duration.ofDays(5)), false);

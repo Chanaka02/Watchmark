@@ -1,5 +1,5 @@
 import type { EpisodeInfo, ResultPage, SeasonDetails, ShowDetails, ShowSummary } from '../features/catalog/types'
-import { json, testUser } from './mockApi'
+import { json, problem, testUser } from './mockApi'
 
 /** Test data only: invented shows. */
 export function summary(id: number, overrides: Partial<ShowSummary> = {}): ShowSummary {
@@ -70,6 +70,9 @@ export function season(episodes: EpisodeInfo[], overrides: Partial<SeasonDetails
     ...overrides,
   }
 }
+
+/** Library response for a show the user has not added. */
+export const notInLibrary = () => problem(404, 'not-in-library', 'This show is not in your library.')
 
 /** Routes every signed-in catalog page needs. */
 export function signedInRoutes(source: { provider: string; mock: boolean } = { provider: 'tmdb', mock: false }) {

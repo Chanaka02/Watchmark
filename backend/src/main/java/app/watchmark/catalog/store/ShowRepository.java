@@ -10,6 +10,7 @@ import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -47,5 +48,18 @@ interface ShowRepository extends JpaRepository<Show, Long> {
 			@Param("attemptedBefore") Instant attemptedBefore, Pageable page);
 
 	long countByMetadataSyncedAtBefore(Instant before);
+
+	/**
+	 * Deletes stored shows no user references (their seasons, episodes and genre
+	 * links cascade). Recently created shows are skipped: they may be about to be
+	 * added to a library. Milestone 5 extends the check to watch history.
+	 */
+	@Modifying
+	@Query(value = """
+			DELETE FROM shows
+			WHERE created_at < :createdBefore
+			  AND NOT EXISTS (SELECT 1 FROM user_shows us WHERE us.show_id = shows.id)
+			""", nativeQuery = true)
+	int deleteUnreferenced(@Param("createdBefore") Instant createdBefore);
 
 }

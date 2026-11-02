@@ -9,6 +9,7 @@ import { MockDataNotice } from '../features/catalog/MockDataNotice'
 import { statusLabels, type SeasonSummary, type ShowDetails } from '../features/catalog/types'
 import { useShow } from '../features/catalog/useCatalog'
 import { useToday } from '../features/catalog/useToday'
+import { LibraryPanel } from '../features/library/LibraryPanel'
 import { ApiError } from '../lib/api'
 import { yearOf } from '../lib/dates'
 
@@ -94,6 +95,7 @@ function ShowDetailsView({ show }: { show: ShowDetails }) {
                 ))}
               </ul>
             )}
+            <LibraryPanel showRef={show.ref} showName={show.name} />
             <p className="max-w-3xl leading-relaxed">{show.overview ?? 'No synopsis available.'}</p>
             {show.nextEpisode && (
               <p className="flex flex-wrap items-center gap-2 text-sm">

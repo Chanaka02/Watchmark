@@ -48,6 +48,9 @@ function MainNav() {
     `rounded-md px-2 py-1 text-sm font-medium ${isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'}`
   return (
     <nav aria-label="Main" className="flex items-center gap-2">
+      <NavLink to="/library" className={linkClass}>
+        Library
+      </NavLink>
       <NavLink to="/discover" className={linkClass}>
         Discover
       </NavLink>

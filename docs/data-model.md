@@ -1,8 +1,8 @@
 # Data model
 
 Status: `users`, the Spring Session tables (V2, V3) and the metadata tables
-`shows`, `genres`, `show_genres`, `seasons`, `episodes` (V4–V7) exist; the
-personal tracking tables are design. Tables are created by the milestone that
+`shows`, `genres`, `show_genres`, `seasons`, `episodes` (V4–V7) and the library
+table `user_shows` (V8) exist; the tracking tables are design. Tables are created by the milestone that
 first needs them (see the last column below).
 
 ## ER diagram (MVP)
@@ -89,7 +89,7 @@ erDiagram
     bigint user_id FK
     bigint show_id FK
     varchar status
-    tinyint rating "1-10 nullable"
+    int rating "1-10 nullable"
     text notes
     int current_cycle
     datetime added_at
@@ -124,7 +124,7 @@ erDiagram
 | `users` | personal | Account, password hash, time zone | 1 ✅ |
 | `SPRING_SESSION`, `SPRING_SESSION_ATTRIBUTES` | infra | Server-side sessions (Spring Session JDBC MySQL schema) | 1 ✅ |
 | `shows`, `seasons`, `episodes`, `genres`, `show_genres` | metadata | Stored provider data needed for tracking; refreshed by a daily job | 3 ✅ |
-| `user_shows` | personal | Library entry: status, rating, notes, cycle, removed flag | 4 |
+| `user_shows` | personal | Library entry: status, rating, notes, cycle, removed flag | 4 ✅ |
 | `tracking_operations` | personal | One row per tracking action, for undo | 5 |
 | `episode_watches` | personal | One row per viewing event | 5 |
 
@@ -140,7 +140,7 @@ erDiagram
 | `genres` | UNIQUE `name` (case-insensitive, accent-sensitive) |
 | `seasons` | UNIQUE `(show_id, active_season_number)`: one active season per number |
 | `episodes` | UNIQUE `(show_id, season_number, active_episode_number)`: one active episode per slot; UNIQUE `(show_id, external_id)`; INDEX `air_date`, `season_id` |
-| `user_shows` | UNIQUE `(user_id, show_id)`; INDEX `(user_id, removed_at, status)`; CHECK `rating BETWEEN 1 AND 10` |
+| `user_shows` | UNIQUE `(user_id, show_id)`; INDEX `(user_id, removed_at, status)`, `show_id`; CHECK `rating BETWEEN 1 AND 10`, `current_cycle >= 1`, status in the five library statuses; `@Version` optimistic lock |
 | `episode_watches` | UNIQUE `(user_id, episode_id, cycle, active_marker)`; INDEX `(user_id, watched_at)`; INDEX `deleted_at` for the purge job |
 
 ### "At most one active watch" in MySQL

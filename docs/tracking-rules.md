@@ -2,8 +2,13 @@
 
 These rules are the specification for Milestones 4–5. Each rule lists the tests
 that must exist and pass; per the agreed process those tests are written
-**before** the implementation in that milestone. Rules R3/R12 configuration is
-already implemented and tested (`TrackingProperties`).
+**before** the implementation in that milestone.
+
+| Rule | Status |
+|---|---|
+| R1 | Implemented for the library (Milestone 4); tracking endpoints follow in Milestone 5 |
+| R10, R11 | Implemented for library data (Milestone 4); watch history joins in Milestone 5 |
+| R2–R9, R12 | Milestone 5 (R3/R12 configuration already implemented: `TrackingProperties`) |
 
 Terms:
 
@@ -142,6 +147,8 @@ from library, dashboard and calendar.
 *Tests:* remove → stats unchanged, library excludes show; re-add → progress
 identical to before removal.
 
+*Implemented (Milestone 4):* `LibraryApiTests.removingKeepsTheEntryDataAndReAddingRestoresIt` (rating, notes, cycle and original added date restored) and `MetadataRefreshJobTests.showsInARemovedLibraryEntryAreStillReferenced` (stored metadata is kept). The stats and progress parts are added with Milestones 5 and 8.
+
 ## R11 — Explicit permanent deletion
 
 `POST /library/{showRef}/purge` with the exact show name as confirmation
@@ -152,6 +159,12 @@ not undoable. Account deletion purges everything for the user.
 
 *Tests:* wrong confirmation → `422`, nothing deleted; purge removes only that
 user's data for that show; other shows and users unaffected.
+
+*Implemented (Milestone 4):* the confirmation compares the stored show name
+ignoring case and repeated whitespace. Purge works on removed entries too;
+re-adding afterwards starts a fresh entry. Watch rows and operations are added
+to the purge in Milestone 5. Stored metadata no user references any more is
+deleted by the daily refresh job (after a one-hour grace period).
 
 ## R12 — Retention of soft-deleted rows
 

@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -70,6 +71,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex) {
 		return ResponseEntity.status(HttpStatus.FORBIDDEN)
 			.body(problem(HttpStatus.FORBIDDEN, "forbidden", "Forbidden", "You cannot perform this action."));
+	}
+
+	/** Two edits of the same record raced; the later one must not silently overwrite the earlier. */
+	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+	ResponseEntity<ProblemDetail> handleConcurrentEdit(ObjectOptimisticLockingFailureException ex) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+			.body(problem(HttpStatus.CONFLICT, "concurrent-update", "Changed elsewhere",
+					"This was changed at the same time somewhere else. Reload and try again."));
 	}
 
 	@ExceptionHandler(Exception.class)
