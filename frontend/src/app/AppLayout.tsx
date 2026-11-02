@@ -1,4 +1,4 @@
-import { Clapperboard, LogOut, Search } from 'lucide-react'
+import { Clapperboard, LogOut, Search, Settings } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 
 import { Button } from '../components/Button'
@@ -51,6 +51,9 @@ function MainNav() {
       <NavLink to="/library" className={linkClass}>
         Library
       </NavLink>
+      <NavLink to="/history" className={linkClass}>
+        History
+      </NavLink>
       <NavLink to="/discover" className={linkClass}>
         Discover
       </NavLink>
@@ -86,7 +89,16 @@ function AccountNav() {
   }
   return (
     <nav aria-label="Account" className="flex items-center gap-3">
-      <span className="hidden text-sm text-ink-muted sm:inline">{currentUser.data.displayName}</span>
+      <NavLink
+        to="/settings"
+        aria-label="Settings"
+        className={({ isActive }) =>
+          `flex items-center gap-2 rounded-md px-2 py-1 text-sm ${isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'}`
+        }
+      >
+        <Settings aria-hidden="true" className="size-4" />
+        <span className="hidden sm:inline">{currentUser.data.displayName}</span>
+      </NavLink>
       <Button variant="ghost" pending={logout.isPending} onClick={() => logout.mutate(undefined, { onSettled: () => navigate('/') })}>
         <LogOut aria-hidden="true" className="size-4" />
         Sign out

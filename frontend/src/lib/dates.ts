@@ -45,3 +45,33 @@ export function yearOf(isoDate: string | null): string | null {
   const match = isoDate ? ISO_DATE.exec(isoDate) : null
   return match ? match[1] : null
 }
+
+/** The calendar date (`YYYY-MM-DD`) of an instant in the given time zone. */
+export function dateIn(instant: string, timeZone: string): string {
+  return todayIn(timeZone, new Date(instant))
+}
+
+/** `YYYY-MM-DD` plus a number of days (negative to go back). */
+export function addDays(isoDate: string, days: number): string {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10)
+}
+
+/** "Today", "Tomorrow", "Yesterday", or the formatted date. */
+export function relativeDay(isoDate: string, today: string, locale?: string): string {
+  if (isoDate === today) {
+    return 'Today'
+  }
+  if (isoDate === addDays(today, 1)) {
+    return 'Tomorrow'
+  }
+  if (isoDate === addDays(today, -1)) {
+    return 'Yesterday'
+  }
+  return formatDate(isoDate, locale) ?? isoDate
+}
+
+/** Time of day of an instant in the given time zone, e.g. "20:15". */
+export function timeIn(instant: string, timeZone: string, locale?: string): string {
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone }).format(new Date(instant))
+}

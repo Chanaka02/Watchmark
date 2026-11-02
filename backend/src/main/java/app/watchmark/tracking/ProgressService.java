@@ -2,9 +2,14 @@ package app.watchmark.tracking;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,6 +31,8 @@ import app.watchmark.tracking.dto.TrackingDtos.NextEpisode;
 import app.watchmark.tracking.dto.TrackingDtos.SeasonProgress;
 import app.watchmark.tracking.dto.TrackingDtos.SeasonSummary;
 import app.watchmark.tracking.dto.TrackingDtos.ShowProgress;
+import app.watchmark.tracking.dto.TrackingDtos.ShowSnapshot;
+import app.watchmark.tracking.dto.TrackingDtos.UpcomingEpisode;
 
 /**
  * Progress of a show in the user's library (rules R6, R7) and rewatching. Only
@@ -124,6 +131,85 @@ public class ProgressService {
 		}
 		entry.startRewatch(clock.instant());
 		return LibraryEntry.from(entry);
+	}
+
+	/** Today in the user's time zone (R5). */
+	public LocalDate today(long userId) {
+		return timelines.today(userId);
+	}
+
+	/**
+	 * Progress, next episode and last watch for several library entries, keyed by
+	 * show id. Loads every show's episodes and watches in two queries.
+	 */
+	@Transactional(readOnly = true)
+	public Map<Long, ShowSnapshot> snapshots(long userId, Collection<UserShow> library) {
+		if (library.isEmpty()) {
+			return Map.of();
+		}
+		Map<Long, UserShow> byShow = new HashMap<>();
+		library.forEach(entry -> byShow.put(entry.getShow().getId(), entry));
+		Map<Long, List<Episode>> episodes = watches.findEpisodesOfShows(byShow.keySet())
+			.stream()
+			.collect(Collectors.groupingBy(e -> e.getShow().getId()));
+		Map<Long, Set<Long>> watched = new HashMap<>();
+		Map<Long, Instant> lastWatched = new HashMap<>();
+		for (EpisodeWatch row : watches.findActiveForShows(userId, byShow.keySet())) {
+			long showId = row.getEpisode().getShow().getId();
+			if (row.getCycle() != byShow.get(showId).getCurrentCycle()) {
+				continue;
+			}
+			watched.computeIfAbsent(showId, id -> new HashSet<>()).add(row.getEpisodeId());
+			lastWatched.merge(showId, row.getWatchedAt(), (a, b) -> a.isAfter(b) ? a : b);
+		}
+
+		LocalDate today = timelines.today(userId);
+		Map<Long, ShowSnapshot> snapshots = new HashMap<>();
+		byShow.forEach((showId, entry) -> {
+			List<Episode> showEpisodes = episodes.getOrDefault(showId, List.of());
+			Progress progress = TimelineLoader.of(showEpisodes, today)
+				.progress(watched.getOrDefault(showId, Set.of()));
+			NextEpisode next = progress.nextEpisodeId() == null ? null
+					: showEpisodes.stream()
+						.filter(e -> e.getId().equals(progress.nextEpisodeId()))
+						.findFirst()
+						.map(e -> new NextEpisode(e.getId(), e.getSeasonNumber(), e.getEpisodeNumber(), e.getName(),
+								e.getAirDate()))
+						.orElse(null);
+			snapshots.put(showId, new ShowSnapshot(counts(progress.overall()), next, lastWatched.get(showId)));
+		});
+		return snapshots;
+	}
+
+	/**
+	 * Episodes of these library shows airing from today through {@code days}
+	 * days ahead in the user's time zone, oldest first, leaving out episodes
+	 * already watched in the current cycle. Undated episodes are never included.
+	 */
+	@Transactional(readOnly = true)
+	public List<UpcomingEpisode> upcoming(long userId, Collection<UserShow> library, int days, int limit) {
+		if (library.isEmpty()) {
+			return List.of();
+		}
+		Map<Long, UserShow> byShow = new HashMap<>();
+		library.forEach(entry -> byShow.put(entry.getShow().getId(), entry));
+		LocalDate today = timelines.today(userId);
+		List<Episode> airing = watches.findAiringBetween(byShow.keySet(), today, today.plusDays(days));
+		if (airing.isEmpty()) {
+			return List.of();
+		}
+		Set<Long> watchedInCycle = new HashSet<>();
+		for (EpisodeWatch row : watches.findActiveForEpisodes(userId, airing.stream().map(Episode::getId).toList())) {
+			if (row.getCycle() == byShow.get(row.getEpisode().getShow().getId()).getCurrentCycle()) {
+				watchedInCycle.add(row.getEpisodeId());
+			}
+		}
+		return airing.stream()
+			.filter(e -> !watchedInCycle.contains(e.getId()))
+			.limit(limit)
+			.map(e -> new UpcomingEpisode(e.getShow().getId(), e.getId(), e.getSeasonNumber(), e.getEpisodeNumber(),
+					e.getName(), e.getAirDate()))
+			.toList();
 	}
 
 	private Map<Long, EpisodeWatch> watchedInCycle(long userId, UserShow entry) {

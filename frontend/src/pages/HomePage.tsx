@@ -4,6 +4,7 @@ import { buttonClasses } from '../components/buttonStyles'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { PageLoader } from '../components/PageLoader'
 import { useCurrentUser } from '../features/auth/useAuth'
+import { DashboardView } from '../features/dashboard/DashboardView'
 
 export function HomePage() {
   const currentUser = useCurrentUser()
@@ -15,26 +16,7 @@ export function HomePage() {
     return <ErrorMessage title="Watchmark is unavailable right now">{currentUser.error.message}</ErrorMessage>
   }
   if (currentUser.data) {
-    return (
-      <section className="max-w-2xl space-y-4">
-        <h1 className="text-3xl font-bold tracking-tight">Welcome back, {currentUser.data.displayName}.</h1>
-        <p className="text-ink-muted">
-          Your dashboard with shows in progress and upcoming episodes is coming in a later milestone. For now,
-          explore the catalogue.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link to="/library" className={buttonClasses('primary')}>
-            My library
-          </Link>
-          <Link to="/discover" className={buttonClasses('secondary')}>
-            Discover shows
-          </Link>
-          <Link to="/search" className={buttonClasses('secondary')}>
-            Search
-          </Link>
-        </div>
-      </section>
-    )
+    return <DashboardView displayName={currentUser.data.displayName} />
   }
   return (
     <section className="max-w-2xl space-y-6">

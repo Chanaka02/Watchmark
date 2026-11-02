@@ -5,10 +5,15 @@ import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+
+import app.watchmark.catalog.store.Episode;
 
 /**
  * One viewing of an episode in one cycle (rule R2). Unwatching soft-deletes the
@@ -29,6 +34,11 @@ public class EpisodeWatch {
 
 	@Column(name = "episode_id", nullable = false)
 	private Long episodeId;
+
+	/** Read-only view of {@link #episodeId}, for queries that need the episode and its show. */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "episode_id", insertable = false, updatable = false)
+	private Episode episode;
 
 	@Column(nullable = false)
 	private int cycle;
@@ -78,6 +88,10 @@ public class EpisodeWatch {
 
 	public Long getEpisodeId() {
 		return episodeId;
+	}
+
+	public Episode getEpisode() {
+		return episode;
 	}
 
 	public int getCycle() {

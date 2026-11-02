@@ -1,4 +1,4 @@
-import type { LibraryStatus } from '../library/types'
+import type { LibraryShow, LibraryStatus } from '../library/types'
 
 /** Mirrors backend `TrackingDtos`. */
 export type ProgressState = 'NOT_STARTED' | 'IN_PROGRESS' | 'CAUGHT_UP' | 'COMPLETE'
@@ -60,3 +60,15 @@ export type WatchResult = {
 export type UnwatchResult = { operationId: string | null; showRef: string; removed: number }
 
 export type UndoResult = { operationId: string; type: OperationType; showRef: string; reverted: number }
+
+/** One viewing; `inLibrary` is false once the show was removed (its history is kept). */
+export type HistoryItem = {
+  watchId: number
+  watchedAt: string
+  cycle: number
+  inLibrary: boolean
+  show: LibraryShow
+  episode: { id: number; season: number; episode: number; name: string; runtimeMinutes: number | null }
+}
+
+export type HistoryPage = { items: HistoryItem[]; nextCursor: string | null }

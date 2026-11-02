@@ -27,7 +27,7 @@ public final class LibraryDtos {
 	/** The parts of stored show metadata a library card needs. */
 	public record LibraryShow(String ref, String name, String posterUrl, LocalDate firstAirDate, ShowStatus status) {
 
-		static LibraryShow from(Show show) {
+		public static LibraryShow from(Show show) {
 			return new LibraryShow(show.ref().toString(), show.getName(), show.getPosterUrl(), show.getFirstAirDate(),
 					show.getStatus());
 		}

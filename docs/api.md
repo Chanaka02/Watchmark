@@ -1,8 +1,8 @@
 # API contract (v1)
 
 Status: health, authentication/profile (Milestone 1), catalog (Milestone 2)
-library (Milestone 4) and tracking/progress (Milestone 5) endpoints are
-**implemented**; the rest is design. The generated OpenAPI
+library (Milestone 4), tracking/progress (Milestone 5) and dashboard/history
+(Milestone 6) endpoints are **implemented**; the rest is design. The generated OpenAPI
 document is served at `/v3/api-docs` when `API_DOCS_ENABLED=true`.
 
 Conventions:
@@ -62,8 +62,8 @@ Conventions:
 | `POST /tracking/shows/{showRef}/seasons/{n}/watch` | Mark the season's eligible episodes (0 = specials) | 5 ✅ |
 | `POST /tracking/episodes/{episodeId}/watch-up-to` | Mark every eligible episode up to and including this one | 5 ✅ |
 | `POST /tracking/operations/{operationId}/undo` | Undo an operation within the undo window (R3) | 5 ✅ |
-| `GET /me/history?cursor=` | Viewing history, newest first | 6 |
-| `GET /me/dashboard` | Continue watching, recent, upcoming, recently added | 6 |
+| `GET /me/history?cursor=&size=` | Viewing history, newest first; `size` 1–100 (default 30); `400 invalid-cursor` | 6 ✅ |
+| `GET /me/dashboard` | Continue watching, upcoming (14 days), recently watched, recently added | 6 ✅ |
 | `GET /me/calendar?from=&to=` | Upcoming episodes; unknown dates listed separately | 7 |
 | `GET /me/stats?range=week\|month\|all` | Statistics (R2) | 8 |
 
@@ -301,6 +301,55 @@ GET /api/v1/library/tmdb:1399/progress/seasons/2
     { "id": 5530, "externalId": "63056", "episode": 1, "name": "…", "airDate": "2012-04-01",
       "eligible": true, "watched": true, "watchedAt": "2026-11-02T10:00:00Z", "upstreamMissing": false } ] }
 ```
+
+### History
+
+Active watches of every cycle, newest first; shows removed from the library are
+included with `"inLibrary": false` (R10). Unwatched (soft-deleted) rows are not
+history. The cursor is opaque; pages stay stable while new watches are added
+(ordering is `watched_at` then id, so rows of one bulk action never repeat or
+go missing between pages).
+
+```http
+GET /api/v1/me/history?size=2
+
+200 OK
+{ "items": [
+    { "watchId": 9015, "watchedAt": "2026-11-02T20:15:00Z", "cycle": 2, "inLibrary": true,
+      "show": { "ref": "tmdb:1399", "name": "…", "posterUrl": "…", "firstAirDate": "2011-04-17", "status": "ENDED" },
+      "episode": { "id": 5521, "season": 3, "episode": 4, "name": "…", "runtimeMinutes": 55 } },
+    { "watchId": 9014, "…": "…" } ],
+  "nextCursor": "MTc2MjExNDUwMC4wOjkwMTQ" }
+```
+
+### Dashboard
+
+Only the user's own data, and nothing from removed shows (R10). Every list is
+empty, never padded, when there is nothing to show.
+
+| List | Contents |
+|---|---|
+| `continueWatching` | Shows marked Watching with an aired next episode (see R6), most recently watched first; shows not started in the current cycle last. At most 12. |
+| `upcoming` | Episodes with an air date from the user's today through 14 days ahead, for library shows not marked Dropped, oldest first; episodes already watched are left out; undated episodes never appear (they belong to the calendar, Milestone 7). At most 20. |
+| `recentlyWatched` | The latest 10 viewings of shows in the library. |
+| `recentlyAdded` | The latest 6 library additions. |
+
+```http
+GET /api/v1/me/dashboard
+
+200 OK
+{ "today": "2026-11-02",
+  "continueWatching": [
+    { "show": { "ref": "tmdb:1399", "name": "…" }, "cycle": 1,
+      "progress": { "watched": 23, "eligible": 73, "total": 73, "percent": 31.5, "state": "IN_PROGRESS" },
+      "nextEpisode": { "id": 5521, "season": 3, "episode": 4, "name": "…", "airDate": "2013-04-21" },
+      "lastWatchedAt": "2026-11-01T20:15:00Z" } ],
+  "upcoming": [ { "show": { "…": "…" }, "episode": { "id": 7001, "season": 2, "episode": 5, "name": "…", "airDate": "2026-11-09" } } ],
+  "recentlyWatched": [ { "…": "same shape as a history item" } ],
+  "recentlyAdded": [ { "…": "same shape as a library entry" } ] }
+```
+
+`today` is the user's date in their time zone; "upcoming" starts from it.
 
 ### Statistics
 

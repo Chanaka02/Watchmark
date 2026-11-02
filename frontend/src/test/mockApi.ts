@@ -7,9 +7,12 @@ type Handler = (request: { body: unknown; headers: Headers }) => Response | Prom
  * handler fails the test loudly instead of surfacing as a vague network error.
  */
 export function mockApi(testRoutes: Record<string, Handler>) {
-  // The layout always asks which data source is active; tests may override it.
+  // The layout always asks which data source is active, and the signed-in home
+  // page loads the dashboard (empty here); tests may override both.
   const routes: Record<string, Handler> = {
     'GET /api/v1/catalog/source': () => json(200, { provider: 'tmdb', mock: false }),
+    'GET /api/v1/me/dashboard': () =>
+      json(200, { today: '2026-11-02', continueWatching: [], upcoming: [], recentlyWatched: [], recentlyAdded: [] }),
     ...testRoutes,
   }
   const unexpected: string[] = []

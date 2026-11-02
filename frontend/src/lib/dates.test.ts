@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { airStatus, formatDate, todayIn, yearOf } from './dates'
+import { addDays, airStatus, dateIn, formatDate, relativeDay, timeIn, todayIn, yearOf } from './dates'
 
 describe('todayIn', () => {
   // 2026-10-27 23:30 UTC: already the 28th in Colombo, still the 27th in Los Angeles.
@@ -43,5 +43,33 @@ describe('yearOf', () => {
   it('extracts the year', () => {
     expect(yearOf('2021-03-14')).toBe('2021')
     expect(yearOf(null)).toBeNull()
+  })
+})
+
+describe('dateIn', () => {
+  it("puts an instant on the user's calendar day", () => {
+    // 22:30 UTC on 1 November is already 2 November in Colombo (UTC+5:30).
+    expect(dateIn('2026-11-01T22:30:00Z', 'Asia/Colombo')).toBe('2026-11-02')
+    expect(dateIn('2026-11-01T22:30:00Z', 'America/Los_Angeles')).toBe('2026-11-01')
+  })
+})
+
+describe('addDays and relativeDay', () => {
+  it('crosses month and year boundaries', () => {
+    expect(addDays('2026-12-31', 1)).toBe('2027-01-01')
+    expect(addDays('2026-03-01', -1)).toBe('2026-02-28')
+  })
+
+  it('names nearby days and formats the rest', () => {
+    expect(relativeDay('2026-11-02', '2026-11-02')).toBe('Today')
+    expect(relativeDay('2026-11-03', '2026-11-02')).toBe('Tomorrow')
+    expect(relativeDay('2026-11-01', '2026-11-02')).toBe('Yesterday')
+    expect(relativeDay('2026-11-10', '2026-11-02', 'en-GB')).toBe('10 Nov 2026')
+  })
+})
+
+describe('timeIn', () => {
+  it("shows the time in the user's zone", () => {
+    expect(timeIn('2026-11-01T22:30:00Z', 'Asia/Colombo', 'en-GB')).toBe('04:00')
   })
 })

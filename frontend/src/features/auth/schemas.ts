@@ -28,7 +28,19 @@ export const registerSchema = z.object({
   password: newPassword,
 })
 
+export const profileSchema = z.object({
+  displayName: z.string().trim().min(1, 'Enter a display name.').max(50, 'Use at most 50 characters.'),
+  timeZone: z.string().min(1, 'Choose a time zone.'),
+})
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Enter your current password.'),
+  newPassword,
+})
+
 export type LoginForm = z.infer<typeof loginSchema>
+export type ProfileForm = z.infer<typeof profileSchema>
+export type ChangePasswordForm = z.infer<typeof changePasswordSchema>
 export type RegisterForm = z.infer<typeof registerSchema>
 
 /** The browser's IANA time zone, used as the account default. */
@@ -38,4 +50,15 @@ export function browserTimeZone(): string {
   } catch {
     return 'UTC'
   }
+}
+
+/** IANA time zones the browser knows, always including `current` so a saved zone is never lost. */
+export function timeZoneOptions(current: string): string[] {
+  let zones: string[] = []
+  try {
+    zones = Intl.supportedValuesOf('timeZone')
+  } catch {
+    // Older browsers: only the saved zone and UTC can be offered.
+  }
+  return [...new Set([current, 'UTC', ...zones])].sort()
 }

@@ -45,43 +45,43 @@ import app.watchmark.catalog.store.MetadataSyncService;
 @Import({ TestcontainersConfiguration.class, FakeProviderConfig.class })
 @SpringBootTest
 @AutoConfigureMockMvc
-abstract class TrackingTestSupport {
+public abstract class TrackingTestSupport {
 
-	static final Instant NOW = Instant.parse("2026-11-02T10:00:00Z");
+	protected static final Instant NOW = Instant.parse("2026-11-02T10:00:00Z");
 
-	static final LocalDate TODAY = LocalDate.of(2026, 11, 2);
+	protected static final LocalDate TODAY = LocalDate.of(2026, 11, 2);
 
 	private static final AtomicInteger showIds = new AtomicInteger(7000);
 
 	@Autowired
-	MockMvcTester mvc;
+	protected MockMvcTester mvc;
 
 	@Autowired
-	JdbcTemplate jdbc;
+	protected JdbcTemplate jdbc;
 
 	@Autowired
-	FakeMetadataProvider provider;
+	protected FakeMetadataProvider provider;
 
 	@Autowired
-	MutableClock clock;
+	protected MutableClock clock;
 
 	@Autowired
-	MetadataSyncService sync;
+	protected MetadataSyncService sync;
 
 	/** A signed-in test user. */
-	record User(AuthTestClient client, Cookie session, String email, long id) {
+	public record User(AuthTestClient client, Cookie session, String email, long id) {
 	}
 
 	/** One episode of a scripted show. */
-	record Ep(int season, int number, LocalDate airDate) {
+	public record Ep(int season, int number, LocalDate airDate) {
 	}
 
-	static Ep ep(int season, int number, LocalDate airDate) {
+	protected static Ep ep(int season, int number, LocalDate airDate) {
 		return new Ep(season, number, airDate);
 	}
 
 	@BeforeEach
-	void resetProviderAndClock() {
+	protected void resetProviderAndClock() {
 		provider.reset();
 		clock.set(NOW);
 	}
@@ -89,14 +89,14 @@ abstract class TrackingTestSupport {
 	// --- Scripted shows ----------------------------------------------------------------------------
 
 	/** Publishes a show at the fake provider and returns its ref ({@code tmdb:<id>}). */
-	String publish(ShowStatus status, Ep... episodes) {
+	protected String publish(ShowStatus status, Ep... episodes) {
 		String id = Integer.toString(showIds.incrementAndGet());
 		publishAs(id, status, List.of(episodes));
 		return "tmdb:" + id;
 	}
 
 	/** (Re)publishes the show's data; a later sync applies it. */
-	void publishAs(String id, ShowStatus status, List<Ep> episodes) {
+	protected void publishAs(String id, ShowStatus status, List<Ep> episodes) {
 		Map<Integer, List<EpisodeInfo>> bySeason = new LinkedHashMap<>();
 		for (Ep e : episodes) {
 			bySeason.computeIfAbsent(e.season(), n -> new ArrayList<>())
@@ -117,11 +117,11 @@ abstract class TrackingTestSupport {
 	}
 
 	/** Stores the show's metadata without adding it to anyone's library. */
-	void store(String showRef) {
+	protected void store(String showRef) {
 		sync.sync(ShowRef.parse(showRef).orElseThrow());
 	}
 
-	long episodeId(String showRef, int season, int number) {
+	protected long episodeId(String showRef, int season, int number) {
 		return jdbc.queryForObject("""
 				SELECT e.id FROM episodes e JOIN shows s ON s.id = e.show_id
 				WHERE s.provider = 'tmdb' AND s.external_id = ? AND e.season_number = ? AND e.episode_number = ?
@@ -130,7 +130,7 @@ abstract class TrackingTestSupport {
 
 	// --- Users -------------------------------------------------------------------------------------
 
-	User newUser() {
+	protected User newUser() {
 		AuthTestClient client = new AuthTestClient(mvc);
 		String email = uniqueEmail();
 		Cookie session = client.registerAndGetSession(email);
@@ -138,41 +138,41 @@ abstract class TrackingTestSupport {
 		return new User(client, session, email, id);
 	}
 
-	void setTimeZone(User user, String zone) {
+	protected void setTimeZone(User user, String zone) {
 		jdbc.update("UPDATE users SET time_zone = ? WHERE id = ?", zone, user.id());
 	}
 
 	// --- Requests ----------------------------------------------------------------------------------
 
-	MvcTestResult addToLibrary(User user, String showRef, String status) {
+	protected MvcTestResult addToLibrary(User user, String showRef, String status) {
 		return send(user, mvc.put().uri("/api/v1/library/" + showRef), "{\"status\": \"" + status + "\"}");
 	}
 
-	MvcTestResult watch(User user, long episodeId) {
+	protected MvcTestResult watch(User user, long episodeId) {
 		return send(user, mvc.put().uri("/api/v1/tracking/episodes/" + episodeId + "/watch"), null);
 	}
 
-	MvcTestResult unwatch(User user, long episodeId) {
+	protected MvcTestResult unwatch(User user, long episodeId) {
 		return send(user, mvc.delete().uri("/api/v1/tracking/episodes/" + episodeId + "/watch"), null);
 	}
 
-	MvcTestResult watchUpTo(User user, long episodeId) {
+	protected MvcTestResult watchUpTo(User user, long episodeId) {
 		return send(user, mvc.post().uri("/api/v1/tracking/episodes/" + episodeId + "/watch-up-to"), null);
 	}
 
-	MvcTestResult watchSeason(User user, String showRef, int season) {
+	protected MvcTestResult watchSeason(User user, String showRef, int season) {
 		return send(user, mvc.post().uri("/api/v1/tracking/shows/" + showRef + "/seasons/" + season + "/watch"), null);
 	}
 
-	MvcTestResult undo(User user, String operationId) {
+	protected MvcTestResult undo(User user, String operationId) {
 		return send(user, mvc.post().uri("/api/v1/tracking/operations/" + operationId + "/undo"), null);
 	}
 
-	MvcTestResult rewatch(User user, String showRef) {
+	protected MvcTestResult rewatch(User user, String showRef) {
 		return send(user, mvc.post().uri("/api/v1/library/" + showRef + "/rewatch"), null);
 	}
 
-	MvcTestResult progress(User user, String showRef) {
+	protected MvcTestResult progress(User user, String showRef) {
 		return mvc.get()
 			.uri("/api/v1/library/" + showRef + "/progress")
 			.cookie(user.session())
@@ -180,7 +180,7 @@ abstract class TrackingTestSupport {
 			.exchange();
 	}
 
-	MvcTestResult seasonProgress(User user, String showRef, int season) {
+	protected MvcTestResult seasonProgress(User user, String showRef, int season) {
 		return mvc.get()
 			.uri("/api/v1/library/" + showRef + "/progress/seasons/" + season)
 			.cookie(user.session())
@@ -188,12 +188,21 @@ abstract class TrackingTestSupport {
 			.exchange();
 	}
 
-	MvcTestResult entry(User user, String showRef) {
+	protected MvcTestResult entry(User user, String showRef) {
 		return mvc.get()
 			.uri("/api/v1/library/" + showRef)
 			.cookie(user.session())
 			.with(user.client().fromClient())
 			.exchange();
+	}
+
+	protected MvcTestResult get(User user, String uri) {
+		return mvc.get().uri(uri).cookie(user.session()).with(user.client().fromClient()).exchange();
+	}
+
+	/** R10: removes the show from the library (history is kept). */
+	protected MvcTestResult removeFromLibrary(User user, String showRef) {
+		return send(user, mvc.delete().uri("/api/v1/library/" + showRef), null);
 	}
 
 	private MvcTestResult send(User user, MockMvcTester.MockMvcRequestBuilder request, String json) {
@@ -205,7 +214,7 @@ abstract class TrackingTestSupport {
 	}
 
 	/** Reads one value from a JSON response. */
-	static <T> T read(MvcTestResult result, String path) {
+	protected static <T> T read(MvcTestResult result, String path) {
 		try {
 			return JsonPath.read(result.getResponse().getContentAsString(), path);
 		}
@@ -215,7 +224,7 @@ abstract class TrackingTestSupport {
 	}
 
 	/** The operation id returned by a tracking request (asserting it was recorded). */
-	static String operationId(MvcTestResult result) {
+	protected static String operationId(MvcTestResult result) {
 		String id = read(result, "$.operationId");
 		if (id == null) {
 			throw new AssertionError("no operation recorded: " + result.getResponse().getStatus());
@@ -225,26 +234,26 @@ abstract class TrackingTestSupport {
 
 	// --- Database checks ---------------------------------------------------------------------------
 
-	int activeWatches(User user) {
+	protected int activeWatches(User user) {
 		return count("SELECT COUNT(*) FROM episode_watches WHERE user_id = ? AND deleted_at IS NULL", user.id());
 	}
 
-	int allWatchRows(User user) {
+	protected int allWatchRows(User user) {
 		return count("SELECT COUNT(*) FROM episode_watches WHERE user_id = ?", user.id());
 	}
 
-	int operations(User user) {
+	protected int operations(User user) {
 		return count("SELECT COUNT(*) FROM tracking_operations WHERE user_id = ?", user.id());
 	}
 
-	String libraryStatus(User user, String showRef) {
+	protected String libraryStatus(User user, String showRef) {
 		return jdbc.queryForObject("""
 				SELECT us.status FROM user_shows us JOIN shows s ON s.id = us.show_id
 				WHERE us.user_id = ? AND s.provider = 'tmdb' AND s.external_id = ?
 				""", String.class, user.id(), showRef.substring("tmdb:".length()));
 	}
 
-	int count(String sql, Object... args) {
+	protected int count(String sql, Object... args) {
 		return jdbc.queryForObject(sql, Integer.class, args);
 	}
 

@@ -4,6 +4,7 @@ import type { RouteObject } from 'react-router'
 import { RedirectIfSignedIn } from '../features/auth/RedirectIfSignedIn'
 import { RequireAuth } from '../features/auth/RequireAuth'
 import { DiscoverPage } from '../pages/DiscoverPage'
+import { HistoryPage } from '../pages/HistoryPage'
 import { HomePage } from '../pages/HomePage'
 import { LibraryPage } from '../pages/LibraryPage'
 import { LoginPage } from '../pages/LoginPage'
@@ -11,6 +12,7 @@ import { NotFoundPage } from '../pages/NotFoundPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { SearchPage } from '../pages/SearchPage'
 import { SeasonPage } from '../pages/SeasonPage'
+import { SettingsPage } from '../pages/SettingsPage'
 import { ShowPage } from '../pages/ShowPage'
 import { AppLayout } from './AppLayout'
 
@@ -27,6 +29,8 @@ export const routes: RouteObject[] = [
       { path: 'register', element: signedOut(<RegisterPage />) },
       { path: 'discover', element: signedIn(<DiscoverPage />) },
       { path: 'library', element: signedIn(<LibraryPage />) },
+      { path: 'history', element: signedIn(<HistoryPage />) },
+      { path: 'settings', element: signedIn(<SettingsPage />) },
       { path: 'search', element: signedIn(<SearchPage />) },
       { path: 'shows/:ref', element: signedIn(<ShowPage />) },
       { path: 'shows/:ref/seasons/:seasonNumber', element: signedIn(<SeasonPage />) },

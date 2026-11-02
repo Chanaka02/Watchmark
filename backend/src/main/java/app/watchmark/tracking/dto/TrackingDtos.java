@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import app.watchmark.library.LibraryStatus;
+import app.watchmark.library.dto.LibraryDtos.LibraryShow;
 import app.watchmark.tracking.OperationType;
 import app.watchmark.tracking.ShowTimeline.State;
 
@@ -78,6 +79,35 @@ public final class TrackingDtos {
 
 	public record SeasonProgress(String showRef, int cycle, int number, boolean special, int watched, int eligible,
 			int total, double percent, State state, List<EpisodeProgress> episodes) {
+	}
+
+	/**
+	 * Where a show stands, for overviews such as the dashboard.
+	 *
+	 * @param nextEpisode {@code null} when caught up
+	 * @param lastWatchedAt latest watch in the current cycle, or {@code null}
+	 */
+	public record ShowSnapshot(Counts progress, NextEpisode nextEpisode, Instant lastWatchedAt) {
+	}
+
+	/** An episode of a library show airing soon. */
+	public record UpcomingEpisode(long showId, long id, int season, int episode, String name, LocalDate airDate) {
+	}
+
+	public record HistoryEpisode(long id, int season, int episode, String name, Integer runtimeMinutes) {
+	}
+
+	/**
+	 * One viewing.
+	 *
+	 * @param inLibrary {@code false} when the show has since been removed (its history is kept, R10)
+	 */
+	public record HistoryItem(long watchId, Instant watchedAt, int cycle, boolean inLibrary, LibraryShow show,
+			HistoryEpisode episode) {
+	}
+
+	/** @param nextCursor pass as {@code cursor} for the next page; {@code null} on the last page */
+	public record HistoryPage(List<HistoryItem> items, String nextCursor) {
 	}
 
 }

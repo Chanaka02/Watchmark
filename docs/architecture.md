@@ -45,7 +45,8 @@ app.watchmark
 ├── catalog/       MetadataProvider, TMDB and mock providers, caching
 │   └── store/     stored metadata: entities, sync service, writer, refresh job
 ├── library/       user_shows: status, rating, notes, remove/purge
-├── tracking/      episode_watches, tracking_operations, progress, undo, purge job
+├── tracking/      episode_watches, tracking_operations, progress, undo, history, purge job
+├── dashboard/     signed-in home page: composes library, progress and history
 ├── calendar/      upcoming episodes
 └── stats/         statistics queries
 ```

@@ -1,11 +1,13 @@
 package app.watchmark.tracking;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -50,6 +52,61 @@ interface EpisodeWatchRepository extends JpaRepository<EpisodeWatch, Long> {
 
 	@Query("select w from EpisodeWatch w where w.userId = :userId and w.deletedByOp = :op and w.deletedAt is not null")
 	List<EpisodeWatch> findDeletedBy(@Param("userId") Long userId, @Param("op") UUID op);
+
+	// --- History (newest first; ties on watched_at broken by id, for stable cursors) ---------------
+
+	@Query("""
+			select w from EpisodeWatch w join fetch w.episode e join fetch e.show
+			where w.userId = :userId and w.deletedAt is null
+			order by w.watchedAt desc, w.id desc
+			""")
+	List<EpisodeWatch> findHistory(@Param("userId") Long userId, Limit limit);
+
+	@Query("""
+			select w from EpisodeWatch w join fetch w.episode e join fetch e.show
+			where w.userId = :userId and w.deletedAt is null
+			  and (w.watchedAt < :at or (w.watchedAt = :at and w.id < :id))
+			order by w.watchedAt desc, w.id desc
+			""")
+	List<EpisodeWatch> findHistoryBefore(@Param("userId") Long userId, @Param("at") Instant at, @Param("id") Long id,
+			Limit limit);
+
+	/** Like {@link #findHistory}, limited to shows currently in the user's library (R10). */
+	@Query("""
+			select w from EpisodeWatch w join fetch w.episode e join fetch e.show s
+			where w.userId = :userId and w.deletedAt is null
+			  and exists (select 1 from UserShow us
+			              where us.userId = :userId and us.show = s and us.removedAt is null)
+			order by w.watchedAt desc, w.id desc
+			""")
+	List<EpisodeWatch> findRecentInLibrary(@Param("userId") Long userId, Limit limit);
+
+	// --- Several shows at once (dashboard) ---------------------------------------------------------
+
+	@Query("select e from Episode e where e.show.id in :showIds")
+	List<Episode> findEpisodesOfShows(@Param("showIds") Collection<Long> showIds);
+
+	@Query("""
+			select w from EpisodeWatch w join fetch w.episode e
+			where w.userId = :userId and w.deletedAt is null and e.show.id in :showIds
+			""")
+	List<EpisodeWatch> findActiveForShows(@Param("userId") Long userId, @Param("showIds") Collection<Long> showIds);
+
+	@Query("""
+			select w from EpisodeWatch w join fetch w.episode e
+			where w.userId = :userId and w.deletedAt is null and w.episodeId in :episodeIds
+			""")
+	List<EpisodeWatch> findActiveForEpisodes(@Param("userId") Long userId,
+			@Param("episodeIds") Collection<Long> episodeIds);
+
+	/** Episodes still listed upstream with an air date in {@code [from, to]}. */
+	@Query("""
+			select e from Episode e join fetch e.show s
+			where s.id in :showIds and e.upstreamMissingAt is null and e.airDate between :from and :to
+			order by e.airDate, s.name, e.seasonNumber, e.episodeNumber
+			""")
+	List<Episode> findAiringBetween(@Param("showIds") Collection<Long> showIds, @Param("from") LocalDate from,
+			@Param("to") LocalDate to);
 
 	// --- Counts (R2): active rows of every cycle, removed shows included (R10) ---------------------
 
