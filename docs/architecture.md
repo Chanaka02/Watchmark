@@ -66,9 +66,11 @@ src/
 └── test/        test setup and helpers
 ```
 
-Server state lives in TanStack Query. The tracking UI uses optimistic updates
-that roll back on error and show an undo toast backed by the server-side
-operation (see [tracking-rules.md](tracking-rules.md)).
+Server state lives in TanStack Query. Tracking actions wait for the server
+(eligibility and idempotency are decided there), then refetch progress and the
+library entry, and show an undo notice backed by the server-side operation
+(see [tracking-rules.md](tracking-rules.md)). The notice stays until dismissed
+or replaced, so there is no time limit to react.
 
 ## Configuration
 

@@ -6,9 +6,9 @@ that must exist and pass; per the agreed process those tests are written
 
 | Rule | Status |
 |---|---|
-| R1 | Implemented for the library (Milestone 4); tracking endpoints follow in Milestone 5 |
-| R10, R11 | Implemented for library data (Milestone 4); watch history joins in Milestone 5 |
-| R2–R9, R12 | Milestone 5 (R3/R12 configuration already implemented: `TrackingProperties`) |
+| R1, R10, R11 | Implemented: library (Milestone 4), watch history and operations (Milestone 5) |
+| R2–R9, R12 | Implemented (Milestone 5): `ShowTimelineTests`, `TrackingApiTests`, `ProgressAndStatusTests`, `TrackingRetentionJobTests` |
+| R2 statistics, R10 stats | User-wide totals exist (`WatchHistory.totals`); the statistics API follows in Milestone 8 |
 
 Terms:
 
@@ -189,6 +189,9 @@ A scheduled job permanently deletes soft-deleted watch rows.
 - `soft-delete-retention` must be ≥ `undo-window`; the application refuses to
   start otherwise, so an undoable operation can never lose its rows.
 
+The job runs daily at 04:00 UTC (`watchmark.tracking.purge-cron`, env
+`TRACKING_PURGE_CRON`; `-` disables it).
+
 All three values are configuration properties (`application.yml` or
 environment variables such as `WATCHMARK_TRACKING_SOFTDELETERETENTION=60d` —
 Spring's relaxed binding drops the dashes in environment variable names);
@@ -197,3 +200,85 @@ changing them needs no code change.
 *Tests:* rows deleted 29d23h ago kept, 30d00h01s ago purged (injected `Clock`);
 restored rows never purged; `purge-enabled=false` purges nothing; operations
 purged only after their rows; configuration validation (already implemented).
+
+## Clarifications decided in Milestone 5
+
+These fill gaps in the rules above; the tests in `backend/src/test/java/app/watchmark/tracking`
+cover each one.
+
+**Eligibility (R5)**
+
+- An upstream-missing episode (R8) cannot be newly watched: `422 episode-unavailable`.
+  Existing watches of it are kept.
+- "A later regular episode has aired" means a regular episode with a higher
+  (season, episode) position whose air date is on or before today. For a
+  **special** with an unknown date, the evidence is a later *special* (higher
+  episode number in season 0) that has aired, because specials have no
+  position relative to regular episodes.
+
+**Progress and states (R6, R7)**
+
+- Per season and for the whole show, using the current cycle and only episodes
+  that are not upstream-missing: `total` = all episodes, `eligible` = episodes
+  that are eligible **or** already watched, `watched` = watched episodes.
+- State: `NOT_STARTED` when `watched = 0`; otherwise `COMPLETE` when
+  `watched = total`, `CAUGHT_UP` when `watched = eligible`, else `IN_PROGRESS`.
+  The show state uses regular episodes only; specials get a state per season but
+  never affect the show's percentage or state.
+- **Next episode:** the first eligible, unwatched regular episode after the
+  furthest watched one (or the first eligible one if nothing is watched). `null`
+  when caught up. Skipped earlier episodes stay visible as unwatched in their season.
+
+**Bulk actions (R7)**
+
+- Mark-season and watch-up-to skip episodes that are already watched
+  (`alreadyWatched`), not yet eligible (`notEligible`) or upstream-missing (not counted).
+- Watch-up-to on a regular episode covers regular episodes up to and including it
+  (all earlier seasons). On a special it covers specials up to it.
+- If nothing is created, no operation is recorded (`operationId: null`).
+
+**Unwatch**
+
+- Unwatch affects only the current cycle. Unwatching an episode that is not
+  watched in the current cycle is a no-op (`200`, `removed: 0`, `operationId: null`).
+- Unwatch never adds or restores a library entry.
+
+**Undo (R3)**
+
+- Undoing a WATCH, SEASON or UP_TO operation soft-deletes its rows with
+  `deleted_by_op = NULL` (the undo is not an operation). Undoing an UNWATCH
+  restores its rows and clears both `deleted_at` and `deleted_by_op`.
+- Unknown operations and other users' operations: `404 operation-not-found`.
+  Already undone: `409 already-undone`. The window check is inclusive: an
+  operation exactly `undo-window` old can still be undone.
+
+**Status automation (R9)**
+
+- Watching (single, season, up-to) adds the show as `WATCHING` when it is not in
+  the library, restores a removed entry (R10, keeping its status), and moves
+  `PLAN_TO_WATCH` to `WATCHING`.
+- After every tracking change, including unwatch and undo, on an entry that is
+  in the library: `WATCHING` or `PLAN_TO_WATCH` becomes `COMPLETED` when the
+  show state is `COMPLETE` and the provider status is ended or canceled; a
+  `COMPLETED` entry whose current cycle is no longer complete returns to
+  `WATCHING`. `ON_HOLD` and `DROPPED` are never changed automatically.
+- Metadata refreshes never change library entries (R8), so a finished show that
+  gains episodes is re-evaluated on the next tracking change.
+
+**Rewatch**
+
+- `POST /library/{showRef}/rewatch` starts cycle `n + 1` and sets `WATCHING`
+  (even from `ON_HOLD` or `DROPPED`, because the user asked for it). It requires
+  at least one watch in the current cycle (`409 nothing-to-rewatch`), so empty
+  cycles cannot pile up. Rewatch is not an operation and cannot be undone.
+- Operations from an earlier cycle can still be undone within the window; they
+  only touch their own rows.
+
+**Purge (R11) and account deletion**
+
+- Each operation stores its show, so purging a show deletes the user's watches
+  for its episodes, then that user's operations for that show, then the library
+  entry, in one transaction.
+- Account deletion deletes the user's watches and operations explicitly before
+  the user row (the watch → operation foreign key is RESTRICT, so the order is
+  not left to cascade ordering).

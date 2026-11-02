@@ -2,7 +2,8 @@
 
 Status: `users`, the Spring Session tables (V2, V3) and the metadata tables
 `shows`, `genres`, `show_genres`, `seasons`, `episodes` (V4–V7) and the library
-table `user_shows` (V8) exist; the tracking tables are design. Tables are created by the milestone that
+table `user_shows` (V8) and the tracking tables `tracking_operations`,
+`episode_watches` (V9, V10) exist. Tables are created by the milestone that
 first needs them (see the last column below).
 
 ## ER diagram (MVP)
@@ -98,8 +99,9 @@ erDiagram
     bigint version "optimistic lock"
   }
   tracking_operations {
-    binary16 id PK "UUID"
+    binary16 id PK "UUID v7"
     bigint user_id FK
+    bigint show_id FK
     varchar type "WATCH|UNWATCH|SEASON|UP_TO"
     datetime created_at
     datetime undone_at "nullable"
@@ -125,8 +127,8 @@ erDiagram
 | `SPRING_SESSION`, `SPRING_SESSION_ATTRIBUTES` | infra | Server-side sessions (Spring Session JDBC MySQL schema) | 1 ✅ |
 | `shows`, `seasons`, `episodes`, `genres`, `show_genres` | metadata | Stored provider data needed for tracking; refreshed by a daily job | 3 ✅ |
 | `user_shows` | personal | Library entry: status, rating, notes, cycle, removed flag | 4 ✅ |
-| `tracking_operations` | personal | One row per tracking action, for undo | 5 |
-| `episode_watches` | personal | One row per viewing event | 5 |
+| `tracking_operations` | personal | One row per tracking action, for undo | 5 ✅ |
+| `episode_watches` | personal | One row per viewing event | 5 ✅ |
 
 **Deferred** (not created until needed): `user_lists`, `user_list_items`,
 `reviews`, follows, notifications. Cast is fetched live and not stored.
@@ -141,7 +143,8 @@ erDiagram
 | `seasons` | UNIQUE `(show_id, active_season_number)`: one active season per number |
 | `episodes` | UNIQUE `(show_id, season_number, active_episode_number)`: one active episode per slot; UNIQUE `(show_id, external_id)`; INDEX `air_date`, `season_id` |
 | `user_shows` | UNIQUE `(user_id, show_id)`; INDEX `(user_id, removed_at, status)`, `show_id`; CHECK `rating BETWEEN 1 AND 10`, `current_cycle >= 1`, status in the five library statuses; `@Version` optimistic lock |
-| `episode_watches` | UNIQUE `(user_id, episode_id, cycle, active_marker)`; INDEX `(user_id, watched_at)`; INDEX `deleted_at` for the purge job |
+| `tracking_operations` | INDEX `(user_id, show_id)` for purge (R11), `created_at` for retention (R12); CHECK type in the four operation types |
+| `episode_watches` | UNIQUE `(user_id, episode_id, cycle, active_marker)`; INDEX `(user_id, watched_at)`; INDEX `deleted_at` for the purge job; CHECK `cycle >= 1` |
 
 ### "At most one active watch" in MySQL
 
@@ -184,6 +187,8 @@ and cycle.
 | `seasons`, `episodes`, `show_genres` → `shows`; `episodes` → `seasons` | CASCADE | Metadata belongs to its show; a show can only be deleted when no user data references it (next row). |
 | `user_shows`, `episode_watches` → metadata | RESTRICT | A metadata refresh can never delete user data. |
 | `episode_watches` → `tracking_operations` | RESTRICT | Operations are purged only after their rows (see R12). |
+| `tracking_operations` → `shows` | RESTRICT | Each operation records its show so a purge (R11) deletes exactly its operations. |
+| `episode_watches`, `tracking_operations` → `users` | CASCADE | Account deletion still deletes rows, then operations, explicitly first, so it never depends on cascade order. |
 
 There is **no** foreign key from `episode_watches` to `user_shows`: history is
 independent of the library entry (rule R10).

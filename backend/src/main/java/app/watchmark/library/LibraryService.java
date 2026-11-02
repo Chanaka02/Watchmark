@@ -22,6 +22,7 @@ import app.watchmark.catalog.store.Show;
 import app.watchmark.common.ApiException;
 import app.watchmark.library.dto.LibraryDtos.LibraryEntry;
 import app.watchmark.library.dto.LibraryDtos.LibraryPage;
+import app.watchmark.tracking.WatchHistory;
 
 /**
  * A user's library (rules R1, R10, R11 in docs/tracking-rules.md). Every method
@@ -46,16 +47,19 @@ public class LibraryService {
 
 	private final MetadataSyncService metadata;
 
+	private final WatchHistory history;
+
 	private final EntityManager entityManager;
 
 	private final TransactionTemplate transaction;
 
 	private final Clock clock;
 
-	LibraryService(UserShowRepository entries, MetadataSyncService metadata, EntityManager entityManager,
-			TransactionTemplate transaction, Clock clock) {
+	LibraryService(UserShowRepository entries, MetadataSyncService metadata, WatchHistory history,
+			EntityManager entityManager, TransactionTemplate transaction, Clock clock) {
 		this.entries = entries;
 		this.metadata = metadata;
+		this.history = history;
 		this.entityManager = entityManager;
 		this.transaction = transaction;
 		this.clock = clock;
@@ -130,7 +134,8 @@ public class LibraryService {
 
 	/**
 	 * R11: permanently deletes this user's data for the show, whether or not it
-	 * is currently in the library. Requires the show name as displayed
+	 * is currently in the library: the entry, every watch row (active or not)
+	 * and the tracking operations for the show. Requires the show name as displayed
 	 * (case and surrounding whitespace ignored). Cannot be undone.
 	 */
 	@Transactional
@@ -141,7 +146,7 @@ public class LibraryService {
 			throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "confirmation-mismatch",
 					"Confirmation does not match", "Type the show's name exactly as shown to confirm.");
 		}
-		// Milestone 5 also deletes this user's watch rows and tracking operations for the show here.
+		history.deleteForShow(userId, entry.getShow().getId());
 		entries.delete(entry);
 	}
 

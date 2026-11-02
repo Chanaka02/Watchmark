@@ -28,7 +28,7 @@ import app.watchmark.catalog.dto.CatalogDtos.SeasonSummary;
 import app.watchmark.catalog.dto.CatalogDtos.ShowDetails;
 
 /** Which stored shows the daily job refreshes, and how it reports failures. */
-@Import({ TestcontainersConfiguration.class, MetadataSyncTests.Config.class })
+@Import({ TestcontainersConfiguration.class, FakeProviderConfig.class })
 @SpringBootTest
 class MetadataRefreshJobTests {
 
@@ -56,6 +56,8 @@ class MetadataRefreshJobTests {
 
 	@BeforeEach
 	void setUp() {
+		jdbc.update("DELETE FROM episode_watches");
+		jdbc.update("DELETE FROM tracking_operations");
 		jdbc.update("DELETE FROM user_shows");
 		jdbc.update("DELETE FROM shows");
 		jdbc.update("DELETE FROM users WHERE email = 'refresh-job@example.com'");
@@ -101,6 +103,23 @@ class MetadataRefreshJobTests {
 		clock.advance(Duration.ofDays(2));
 
 		assertThat(job.runOnce().deleted()).as("history must survive removal (R10)").isZero();
+	}
+
+	@Test
+	void showsWithWatchHistoryAreStillReferenced() {
+		storeUnreferenced("history-only", ShowStatus.ENDED);
+		long showId = stored("history-only").getId();
+		long episodeId = jdbc.queryForObject("SELECT id FROM episodes WHERE show_id = ?", Long.class, showId);
+		jdbc.update("INSERT INTO tracking_operations (id, user_id, show_id, type, created_at) "
+				+ "VALUES (UUID_TO_BIN('00000000-0000-7000-8000-000000000001'), ?, ?, 'WATCH', ?)", userId, showId,
+				Timestamp.from(NOW));
+		jdbc.update("INSERT INTO episode_watches (user_id, episode_id, cycle, watched_at, created_by_op) "
+				+ "VALUES (?, ?, 1, ?, UUID_TO_BIN('00000000-0000-7000-8000-000000000001'))", userId, episodeId,
+				Timestamp.from(NOW));
+		clock.advance(Duration.ofDays(2));
+
+		assertThat(job.runOnce().deleted()).as("watch history references the show even without a library entry")
+			.isZero();
 	}
 
 	@Test

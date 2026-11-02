@@ -145,6 +145,7 @@
 						<springdoc.swagger-ui.enabled>false</springdoc.swagger-ui.enabled>
 						<!-- Scheduled jobs are exercised by calling them directly. -->
 						<watchmark.metadata.refresh.cron>-</watchmark.metadata.refresh.cron>
+						<watchmark.tracking.purge-cron>-</watchmark.tracking.purge-cron>
 					</systemPropertyVariables>
 				</configuration>
 			</plugin>

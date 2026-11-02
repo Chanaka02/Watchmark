@@ -18,20 +18,20 @@ import app.watchmark.catalog.dto.CatalogDtos.ShowDetails;
 import app.watchmark.catalog.dto.CatalogDtos.ShowSummary;
 
 /** Scriptable provider for sync tests: data, failures and call counts per show. */
-class FakeMetadataProvider implements MetadataProvider {
+public class FakeMetadataProvider implements MetadataProvider {
 
-	final Map<String, ShowDetails> shows = new ConcurrentHashMap<>();
+	public final Map<String, ShowDetails> shows = new ConcurrentHashMap<>();
 
-	final Map<String, SeasonDetails> seasons = new ConcurrentHashMap<>();
+	public final Map<String, SeasonDetails> seasons = new ConcurrentHashMap<>();
 
 	/** Keys ({@code "show"} or {@code "show/season"}) that fail with 503. */
-	final Map<String, Boolean> unavailable = new ConcurrentHashMap<>();
+	public final Map<String, Boolean> unavailable = new ConcurrentHashMap<>();
 
 	final List<String> calls = Collections.synchronizedList(new ArrayList<>());
 
 	final AtomicInteger showCalls = new AtomicInteger();
 
-	void reset() {
+	public void reset() {
 		shows.clear();
 		seasons.clear();
 		unavailable.clear();

@@ -85,6 +85,52 @@ public class UserShow {
 		updatedAt = now;
 	}
 
+	/** A show first tracked without being in the library (R9). */
+	public static UserShow startedByTracking(Long userId, Show show, Instant now) {
+		return new UserShow(userId, show, LibraryStatus.WATCHING, now);
+	}
+
+	/**
+	 * Called before episodes are marked watched (R9): restores a removed entry
+	 * with its status, and moves {@code PLAN_TO_WATCH} to {@code WATCHING}.
+	 */
+	public void trackingStarted(Instant now) {
+		removedAt = null;
+		if (status == LibraryStatus.PLAN_TO_WATCH) {
+			status = LibraryStatus.WATCHING;
+		}
+		updatedAt = now;
+	}
+
+	/**
+	 * Status automation after any tracking change (R9). {@code ON_HOLD} and
+	 * {@code DROPPED} are never changed, nor is a removed entry.
+	 *
+	 * @param cycleComplete every regular episode is watched in the current cycle
+	 */
+	public void reconcileStatus(boolean cycleComplete, Instant now) {
+		if (isRemoved()) {
+			return;
+		}
+		LibraryStatus next = status;
+		if (cycleComplete && show.getStatus().isFinished()
+				&& (status == LibraryStatus.WATCHING || status == LibraryStatus.PLAN_TO_WATCH)) {
+			next = LibraryStatus.COMPLETED;
+		}
+		else if (!cycleComplete && status == LibraryStatus.COMPLETED) {
+			next = LibraryStatus.WATCHING;
+		}
+		status = next;
+		updatedAt = now;
+	}
+
+	/** Starts the next watch-through; earlier cycles' history is untouched. */
+	public void startRewatch(Instant now) {
+		currentCycle++;
+		status = LibraryStatus.WATCHING;
+		updatedAt = now;
+	}
+
 	/** Leaves the library; everything about the entry is kept (R10). */
 	void remove(Instant now) {
 		removedAt = now;

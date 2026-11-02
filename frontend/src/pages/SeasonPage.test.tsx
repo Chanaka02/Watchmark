@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { details, episode, season, signedInRoutes } from '../test/catalogFixtures'
+import { details, episode, notInLibrary, season, signedInRoutes } from '../test/catalogFixtures'
 import { json, mockApi, problem, testUser } from '../test/mockApi'
 import { renderRoute } from '../test/renderRoute'
 
@@ -10,6 +10,7 @@ function routes(user = testUser) {
     ...signedInRoutes(),
     'GET /api/v1/auth/me': () => json(200, user),
     'GET /api/v1/catalog/shows/tmdb%3A1': () => json(200, details()),
+    'GET /api/v1/library/tmdb%3A1': notInLibrary,
     'GET /api/v1/catalog/shows/tmdb%3A1/seasons/1': () =>
       json(
         200,
@@ -77,7 +78,11 @@ describe('SeasonPage', () => {
   })
 
   it('rejects a non-numeric season without calling the API', async () => {
-    mockApi({ ...signedInRoutes(), 'GET /api/v1/catalog/shows/tmdb%3A1': () => json(200, details()) })
+    mockApi({
+      ...signedInRoutes(),
+      'GET /api/v1/catalog/shows/tmdb%3A1': () => json(200, details()),
+      'GET /api/v1/library/tmdb%3A1': notInLibrary,
+    })
     renderRoute('/shows/tmdb:1/seasons/abc')
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Season not found')

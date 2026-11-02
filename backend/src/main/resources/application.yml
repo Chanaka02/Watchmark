@@ -118,3 +118,5 @@ watchmark:
     soft-delete-retention: 30d
     # Master switch for the purge job; false keeps soft-deleted rows forever.
     purge-enabled: true
+    # When the purge job runs: daily at 04:00 UTC; "-" disables it.
+    purge-cron: ${TRACKING_PURGE_CRON:0 0 4 * * *}

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import app.watchmark.common.ApiException;
+import app.watchmark.tracking.WatchHistory;
 import app.watchmark.user.dto.RegisterRequest;
 import app.watchmark.user.dto.UpdateProfileRequest;
 import app.watchmark.user.validation.PasswordPolicy;
@@ -20,10 +21,13 @@ public class UserService {
 
 	private final PasswordEncoder passwordEncoder;
 
+	private final WatchHistory history;
+
 	private final Clock clock;
 
-	public UserService(UserRepository users, PasswordEncoder passwordEncoder, Clock clock) {
+	public UserService(UserRepository users, PasswordEncoder passwordEncoder, WatchHistory history, Clock clock) {
 		this.users = users;
+		this.history = history;
 		this.passwordEncoder = passwordEncoder;
 		this.clock = clock;
 	}
@@ -78,6 +82,7 @@ public class UserService {
 	public void deleteAccount(long userId, String password) {
 		User user = get(userId);
 		requirePassword(user, password);
+		history.deleteForUser(userId);
 		users.delete(user);
 	}
 

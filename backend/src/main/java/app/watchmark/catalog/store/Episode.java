@@ -102,6 +102,10 @@ public class Episode {
 		return id;
 	}
 
+	public Show getShow() {
+		return show;
+	}
+
 	public Long getSeasonId() {
 		return season.getId();
 	}

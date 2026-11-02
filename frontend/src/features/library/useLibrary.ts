@@ -49,6 +49,8 @@ function useLibraryMutation<TInput>(ref: string, request: (input: TInput) => Pro
     onSuccess: (entry) => {
       queryClient.setQueryData(libraryKeys.entry(ref), entry)
       void queryClient.invalidateQueries({ queryKey: ['library', 'list'] })
+      // Progress exists only while the show is in the library (same key as trackingKeys.show).
+      void queryClient.invalidateQueries({ queryKey: ['tracking', ref] })
     },
   })
 }

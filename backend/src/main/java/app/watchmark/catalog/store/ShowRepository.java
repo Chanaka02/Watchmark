@@ -52,13 +52,17 @@ interface ShowRepository extends JpaRepository<Show, Long> {
 	/**
 	 * Deletes stored shows no user references (their seasons, episodes and genre
 	 * links cascade). Recently created shows are skipped: they may be about to be
-	 * added to a library. Milestone 5 extends the check to watch history.
+	 * added to a library. Watch history and tracking operations count as
+	 * references too, whether or not the show is still in a library.
 	 */
 	@Modifying
 	@Query(value = """
 			DELETE FROM shows
 			WHERE created_at < :createdBefore
 			  AND NOT EXISTS (SELECT 1 FROM user_shows us WHERE us.show_id = shows.id)
+			  AND NOT EXISTS (SELECT 1 FROM tracking_operations o WHERE o.show_id = shows.id)
+			  AND NOT EXISTS (SELECT 1 FROM episode_watches w JOIN episodes e ON e.id = w.episode_id
+			                  WHERE e.show_id = shows.id)
 			""", nativeQuery = true)
 	int deleteUnreferenced(@Param("createdBefore") Instant createdBefore);
 

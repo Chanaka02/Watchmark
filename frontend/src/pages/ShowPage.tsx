@@ -1,4 +1,4 @@
-import { CalendarClock, Clock, Star, Tv } from 'lucide-react'
+import { CalendarClock, CircleCheck, Clock, Star, Tv } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
 import { ErrorMessage } from '../components/ErrorMessage'
@@ -10,6 +10,10 @@ import { statusLabels, type SeasonSummary, type ShowDetails } from '../features/
 import { useShow } from '../features/catalog/useCatalog'
 import { useToday } from '../features/catalog/useToday'
 import { LibraryPanel } from '../features/library/LibraryPanel'
+import { useLibraryEntry } from '../features/library/useLibrary'
+import { ProgressPanel } from '../features/tracking/ProgressPanel'
+import type { SeasonSummary as SeasonProgress } from '../features/tracking/types'
+import { useShowProgress } from '../features/tracking/useTracking'
 import { ApiError } from '../lib/api'
 import { yearOf } from '../lib/dates'
 
@@ -37,6 +41,8 @@ export function ShowPage() {
 
 function ShowDetailsView({ show }: { show: ShowDetails }) {
   const { today } = useToday()
+  const inLibrary = useLibraryEntry(show.ref).data != null
+  const progress = useShowProgress(show.ref, inLibrary)
   const years = yearRange(show)
   // Regular seasons first, specials last: that is how people browse a show.
   const seasons = [...show.seasons.filter((s) => s.seasonNumber > 0), ...show.seasons.filter((s) => s.seasonNumber === 0)]
@@ -110,6 +116,8 @@ function ShowDetailsView({ show }: { show: ShowDetails }) {
         </div>
       </header>
 
+      {inLibrary && <ProgressPanel showRef={show.ref} showName={show.name} />}
+
       <section aria-labelledby="seasons-heading" className="space-y-4">
         <h2 id="seasons-heading" className="text-xl font-semibold">
           Seasons
@@ -120,7 +128,11 @@ function ShowDetailsView({ show }: { show: ShowDetails }) {
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {seasons.map((season) => (
               <li key={season.seasonNumber}>
-                <SeasonLink showRef={show.ref} season={season} />
+                <SeasonLink
+                  showRef={show.ref}
+                  season={season}
+                  progress={progress.data?.seasons.find((s) => s.number === season.seasonNumber)}
+                />
               </li>
             ))}
           </ul>
@@ -160,7 +172,15 @@ function ShowDetailsView({ show }: { show: ShowDetails }) {
   )
 }
 
-function SeasonLink({ showRef, season }: { showRef: string; season: SeasonSummary }) {
+function SeasonLink({
+  showRef,
+  season,
+  progress,
+}: {
+  showRef: string
+  season: SeasonSummary
+  progress?: SeasonProgress
+}) {
   const year = yearOf(season.airDate)
   const details = [
     season.episodeCount != null ? `${season.episodeCount} episode${season.episodeCount === 1 ? '' : 's'}` : null,
@@ -172,7 +192,15 @@ function SeasonLink({ showRef, season }: { showRef: string; season: SeasonSummar
       to={`/shows/${showRef}/seasons/${season.seasonNumber}`}
       className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-4 hover:border-ink-muted"
     >
-      <span className="font-medium">{season.name}</span>
+      <span className="min-w-0">
+        <span className="block font-medium">{season.name}</span>
+        {progress && progress.watched > 0 && (
+          <span className="flex items-center gap-1 text-xs text-ink-muted">
+            {progress.state === 'COMPLETE' && <CircleCheck aria-hidden="true" className="size-3.5 text-success" />}
+            {progress.watched} of {progress.total} watched
+          </span>
+        )}
+      </span>
       <span className="text-sm text-ink-muted">{details.length > 0 ? details.join(' · ') : 'Details not announced'}</span>
     </Link>
   )

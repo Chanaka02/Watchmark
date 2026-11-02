@@ -1,4 +1,5 @@
 import { ChevronLeft, Clock, ListX } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { EmptyState } from '../components/EmptyState'
@@ -8,6 +9,12 @@ import { AirDate } from '../features/catalog/AirDate'
 import { MockDataNotice } from '../features/catalog/MockDataNotice'
 import { useSeason, useShow } from '../features/catalog/useCatalog'
 import { useToday } from '../features/catalog/useToday'
+import { useLibraryEntry } from '../features/library/useLibrary'
+import { EpisodeTrackingControls } from '../features/tracking/EpisodeTrackingControls'
+import { SeasonTrackingBar } from '../features/tracking/SeasonTrackingBar'
+import type { EpisodeProgress } from '../features/tracking/types'
+import { UndoNotice, type TrackingNotice } from '../features/tracking/UndoNotice'
+import { useSeasonProgress } from '../features/tracking/useTracking'
 import { ApiError } from '../lib/api'
 
 export function SeasonPage() {
@@ -16,6 +23,10 @@ export function SeasonPage() {
   const season = useSeason(ref, seasonNumber)
   const show = useShow(ref)
   const { today, timeZone } = useToday()
+  const inLibrary = useLibraryEntry(ref).data != null
+  const tracking = useSeasonProgress(ref, seasonNumber, inLibrary && seasonNumber >= 0)
+  const [notice, setNotice] = useState<TrackingNotice | null>(null)
+  const [trackingError, setTrackingError] = useState<string | null>(null)
 
   if (seasonNumber < 0) {
     return <ErrorMessage title="Season not found" />
@@ -36,6 +47,28 @@ export function SeasonPage() {
   }
 
   const { episodes } = season.data
+  // Stored episodes match the catalogue by provider id; the number is a fallback.
+  const tracked = tracking.data?.episodes ?? []
+  const trackedFor = (externalId: string, episodeNumber: number) =>
+    tracked.find((e) => e.externalId === externalId) ??
+    tracked.find((e) => !e.upstreamMissing && e.episode === episodeNumber)
+  const listed = new Set(episodes.map((e) => trackedFor(e.externalId, e.episodeNumber)?.id))
+  const unlisted = tracked.filter((e) => e.upstreamMissing && !listed.has(e.id))
+  const onNotice = (next: TrackingNotice) => {
+    setTrackingError(null)
+    setNotice(next)
+  }
+  const controls = (episode: EpisodeProgress | undefined) =>
+    episode && (
+      <EpisodeTrackingControls
+        showRef={ref}
+        season={seasonNumber}
+        episode={episode}
+        onNotice={onNotice}
+        onError={setTrackingError}
+      />
+    )
+
   return (
     <article className="space-y-6">
       <MockDataNotice />
@@ -50,6 +83,15 @@ export function SeasonPage() {
           Release status is based on today in {timeZone}. Air times are not published, only dates.
         </p>
       </div>
+
+      <SeasonTrackingBar showRef={ref} inLibrary={inLibrary} progress={tracking.data} onNotice={onNotice} />
+      {tracking.isError && (
+        <ErrorMessage title="Could not load your progress" onRetry={() => void tracking.refetch()}>
+          {tracking.error.message}
+        </ErrorMessage>
+      )}
+      {trackingError && <ErrorMessage title="Could not update your progress">{trackingError}</ErrorMessage>}
+      <UndoNotice showRef={ref} notice={notice} onChange={setNotice} />
 
       {episodes.length === 0 ? (
         <EmptyState icon={ListX} title="No episodes announced yet">
@@ -78,9 +120,28 @@ export function SeasonPage() {
                 </p>
                 {episode.overview && <p className="text-sm leading-relaxed text-ink-muted">{episode.overview}</p>}
               </div>
+              {controls(trackedFor(episode.externalId, episode.episodeNumber))}
             </li>
           ))}
         </ol>
+      )}
+
+      {unlisted.length > 0 && (
+        <section aria-labelledby="unlisted-heading" className="space-y-2">
+          <h2 id="unlisted-heading" className="text-sm font-medium text-ink-muted">
+            Watched, but no longer listed by the data source
+          </h2>
+          <ul className="divide-y divide-line rounded-card border border-line bg-surface">
+            {unlisted.map((episode) => (
+              <li key={episode.id} className="flex items-center gap-4 p-4">
+                <span className="min-w-0 flex-1 text-sm">
+                  Episode {episode.episode}: {episode.name}
+                </span>
+                {controls(episode)}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </article>
   )

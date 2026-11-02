@@ -22,10 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -45,30 +42,13 @@ import app.watchmark.catalog.dto.CatalogDtos.ShowDetails;
  * episodes dropped/renumbered/replaced upstream (R8), atomicity on provider
  * failure, selective season fetching and concurrent syncs.
  */
-@Import({ TestcontainersConfiguration.class, MetadataSyncTests.Config.class })
+@Import({ TestcontainersConfiguration.class, FakeProviderConfig.class })
 @SpringBootTest
 class MetadataSyncTests {
 
 	static final Instant NOW = Instant.parse("2026-11-02T10:00:00Z");
 
 	static final LocalDate TODAY = LocalDate.of(2026, 11, 2);
-
-	@TestConfiguration(proxyBeanMethods = false)
-	static class Config {
-
-		@Bean
-		@Primary
-		FakeMetadataProvider fakeMetadataProvider() {
-			return new FakeMetadataProvider();
-		}
-
-		@Bean
-		@Primary
-		MutableClock testClock() {
-			return new MutableClock(NOW);
-		}
-
-	}
 
 	@Autowired
 	MetadataSyncService sync;
