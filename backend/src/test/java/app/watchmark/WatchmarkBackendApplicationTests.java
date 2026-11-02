@@ -24,9 +24,12 @@ class WatchmarkBackendApplicationTests {
 
 	@Test
 	void flywayAppliesAllMigrationsAgainstMysql() {
-		assertThat(flyway.info().current()).isNotNull();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("3");
-		assertThat(flyway.info().pending()).isEmpty();
+		var info = flyway.info();
+		var all = info.all();
+		assertThat(info.current()).isNotNull();
+		assertThat(info.current().getVersion()).as("newest migration applied")
+			.isEqualTo(all[all.length - 1].getVersion());
+		assertThat(info.pending()).isEmpty();
 	}
 
 	@Test

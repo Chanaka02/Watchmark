@@ -143,6 +143,8 @@
 						<watchmark.tmdb.read-access-token></watchmark.tmdb.read-access-token>
 						<springdoc.api-docs.enabled>false</springdoc.api-docs.enabled>
 						<springdoc.swagger-ui.enabled>false</springdoc.swagger-ui.enabled>
+						<!-- Scheduled jobs are exercised by calling them directly. -->
+						<watchmark.metadata.refresh.cron>-</watchmark.metadata.refresh.cron>
 					</systemPropertyVariables>
 				</configuration>
 			</plugin>

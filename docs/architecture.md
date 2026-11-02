@@ -28,6 +28,8 @@ to `localhost:8080`, or to `WATCHMARK_BACKEND_URL` (see `frontend/vite.config.ts
 | **Metadata provider interface** | `catalog` talks to a `MetadataProvider`; `TmdbMetadataProvider` and `MockMetadataProvider` implement it. Shows are keyed by `(provider, external_id)`, so a provider change does not touch user data. |
 | **Metadata selection** | `watchmark.metadata.provider`: `auto` locally (TMDB if a token exists, otherwise mock) and `tmdb` in production, so a missing token fails at startup. Tests are pinned to `mock` through Surefire system properties and never call TMDB. |
 | **Caching** | Caffeine in-memory caches in `CatalogService` (lists 1 h, search 15 min, shows and seasons 6 h); errors are never cached. Single-instance by design, like the rate limiter. |
+| **Metadata sync** | `MetadataSyncService` fetches from the provider first, then `MetadataWriter` applies everything in one short transaction (row lock on the show; duplicate-key or deadlock from a concurrent first sync is retried once). Never deletes rows; see [data-model.md](data-model.md). |
+| **Scheduled jobs** | `@Scheduled` with configurable cron (`-` disables). Single instance assumed; a distributed lock (e.g. ShedLock) is needed before running several instances. |
 | **Flyway owns the schema** | `ddl-auto=validate`; Hibernate never modifies tables. |
 | **UTC everywhere in storage** | `DATETIME(6)` + `Instant`, JDBC session time zone UTC, MySQL server time zone UTC. Conversion to the user's IANA time zone happens only in services that compute "today" and in the UI. |
 | **Real MySQL in tests** | Testcontainers runs `mysql:8.4`, the same version as Compose and production. No H2 dialect differences. |
@@ -40,7 +42,8 @@ app.watchmark
 ├── common/        error handling (RFC 9457 problem+json), shared config
 ├── auth/          registration, login, sessions, security config
 ├── user/          profile, time zone, account deletion
-├── catalog/       MetadataProvider, TMDB client, metadata entities, refresh job
+├── catalog/       MetadataProvider, TMDB and mock providers, caching
+│   └── store/     stored metadata: entities, sync service, writer, refresh job
 ├── library/       user_shows: status, rating, notes, remove/purge
 ├── tracking/      episode_watches, tracking_operations, progress, undo, purge job
 ├── calendar/      upcoming episodes

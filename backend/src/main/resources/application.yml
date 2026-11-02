@@ -87,6 +87,17 @@ watchmark:
     # tmdb | mock | auto (auto = tmdb when a token is set, otherwise mock).
     # Production must use tmdb so a missing token fails fast.
     provider: ${METADATA_PROVIDER:auto}
+    # Stored metadata refresh (see docs/tmdb.md: TMDB allows at most six months).
+    refresh:
+      # Daily at 03:30 UTC; "-" disables the job.
+      cron: ${METADATA_REFRESH_CRON:0 30 3 * * *}
+      batch-size: 200
+      # Below 24h so a daily run never skips a show refreshed seconds later the day before.
+      airing-max-age: 20h
+      finished-max-age: 30d
+      season-max-age: 30d
+      hard-max-age: 150d
+      retry-after: 12h
   tmdb:
     read-access-token: ${TMDB_READ_ACCESS_TOKEN:}
     base-url: https://api.themoviedb.org/3
