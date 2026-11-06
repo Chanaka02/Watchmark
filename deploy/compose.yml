@@ -1,0 +1,84 @@
+# Production stack: Caddy (HTTPS, frontend) -> backend -> MySQL. Run on the
+# server from the repo root (see docs/deployment.md):
+#   docker compose -f deploy/compose.yml --env-file deploy/production.env up -d
+# Only Caddy is reachable from outside; MySQL and the backend have no published ports.
+name: ${COMPOSE_PROJECT_NAME:-watchmark-prod}
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-watchmark}
+      MYSQL_USER: ${DB_USERNAME:-watchmark}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD}
+      TZ: UTC
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+      # Sized for a 2–4 GB server; the data set of one user is small.
+      - --innodb-buffer-pool-size=256M
+      - --performance-schema=OFF
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    mem_limit: 768m
+
+  backend:
+    image: ${BACKEND_IMAGE:-watchmark-backend:latest}
+    build: ../backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-watchmark}
+      DB_USERNAME: ${DB_USERNAME:-watchmark}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      # Production must use TMDB, so a missing token fails at startup instead of
+      # silently showing fictional shows. Local tests set "mock".
+      METADATA_PROVIDER: ${METADATA_PROVIDER:-tmdb}
+      TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN:-}
+      SESSION_COOKIE_SECURE: "true"
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:-14d}
+      # Real client IPs (rate limits) from Caddy's X-Forwarded-* headers; Tomcat
+      # trusts them only from private addresses such as this Docker network.
+      SERVER_FORWARD_HEADERS_STRATEGY: native
+      API_DOCS_ENABLED: "false"
+    mem_limit: 768m
+
+  web:
+    image: ${WEB_IMAGE:-watchmark-web:latest}
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS (the domain)}
+      HTTP_PORT: ${HTTP_PORT:-80}
+      HTTPS_PORT: ${HTTPS_PORT:-443}
+    ports:
+      - "${HTTP_PORT:-80}:${HTTP_PORT:-80}"
+      - "${HTTPS_PORT:-443}:${HTTPS_PORT:-443}"
+      - "${HTTPS_PORT:-443}:${HTTPS_PORT:-443}/udp"
+    volumes:
+      # Certificates and Caddy state: must survive restarts (Let's Encrypt rate limits).
+      - caddy-data:/data
+      - caddy-config:/config
+    mem_limit: 128m
+
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:

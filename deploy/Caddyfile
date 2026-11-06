@@ -1,0 +1,50 @@
+# Watchmark production web server: HTTPS (automatic certificates for a public
+# domain), security headers, the frontend, and /api proxied to the backend.
+# SITE_ADDRESS is the domain (e.g. watchmark.example.org); "localhost:8443"
+# for a local test, where Caddy uses its own locally trusted certificate.
+
+{
+	http_port {$HTTP_PORT:80}
+	https_port {$HTTPS_PORT:443}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		# HTTPS only, for a year, once the site has been reached over HTTPS.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Only this origin's scripts, styles and API; poster images from TMDB.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://image.tmdb.org; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		-Server
+	}
+
+	# The API. Caddy adds X-Forwarded-For/-Proto; the backend trusts them from
+	# this private Docker network only (server.forward-headers-strategy=native).
+	# Actuator endpoints are deliberately not exposed.
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		root * /srv
+		# Content-hashed build files never change: cache them for a year.
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		# Everything else is index.html under some route: always revalidate, so a
+		# new release is picked up immediately.
+		@pages not path /assets/*
+		header @pages Cache-Control "no-cache"
+		# Client-side routes (/library, /shows/…) are all served by index.html.
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

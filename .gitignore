@@ -16,3 +16,6 @@ desktop.ini
 *.log
 *.sql.gz
 backups/
+
+# Deployment environment files (secrets); the *.example templates are committed.
+deploy/*.env

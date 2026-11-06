@@ -14,8 +14,8 @@ next starts.
 | 6 | **Dashboard and history**, plus the profile/settings page | Shows only real data | ✅ done |
 | 7 | **Calendar** (list + month, time-zone aware) | Unknown dates shown separately, none invented | ✅ done |
 | 8 | **Statistics** (unique vs total, hours, genres, activity) | Verified against fixtures | ✅ done |
-| 9 | **Hardening**: accessibility, Playwright end-to-end tests, dependency scanning, error pages | Register → track episode end-to-end test passes | ✅ done (pending review) |
-| 10 | **Deployment**: compare managed platform vs VPS + Compose + Caddy (cost, security, backups, maintenance), then deploy after approval | Documented deploy, tested backup restore, rollback guide | |
+| 9 | **Hardening**: accessibility, Playwright end-to-end tests, dependency scanning, error pages | Register → track episode end-to-end test passes | ✅ done |
+| 10 | **Deployment**: compare managed platform vs VPS + Compose + Caddy (cost, security, backups, maintenance), then deploy after approval | Documented deploy, tested backup restore, rollback guide | ✅ prepared and tested locally (pending review); going live needs a server and domain you rent |
 
 The profile/settings page (display name, time zone, password, account
 deletion) was built with the dashboard in Milestone 6.

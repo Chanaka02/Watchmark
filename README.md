@@ -6,7 +6,7 @@ episode you watch. *Watchmark* is a provisional working name.
 > Personal, non-commercial project. Show metadata will come from TMDB under its
 > non-commercial API terms — see [docs/tmdb.md](docs/tmdb.md).
 
-**Status:** Milestone 9 (hardening). See [docs/roadmap.md](docs/roadmap.md).
+**Status:** Milestone 10 (deployment prepared and tested locally; not yet live). See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
@@ -120,5 +120,7 @@ Watchmark/
 - [API contract](docs/api.md)
 - [Tracking rules](docs/tracking-rules.md)
 - [Security](docs/security.md)
+- [Deployment options (comparison)](docs/deployment-options.md)
+- [Deployment guide](docs/deployment.md)
 - [TMDB usage and attribution](docs/tmdb.md)
 - [Roadmap](docs/roadmap.md)

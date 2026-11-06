@@ -103,6 +103,9 @@ request appears to come from the proxy and shares one bucket.
 
 ## Production checklist (Milestone 10)
 
+Implemented in `deploy/` and verified locally; see the checklist in
+[deployment.md](deployment.md). Remaining items are server-side only.
+
 - `SESSION_COOKIE_SECURE=true` (HTTPS only).
 - Forwarded-header handling for real client IPs.
 - HSTS and a Content-Security-Policy at the reverse proxy. Draft, to be

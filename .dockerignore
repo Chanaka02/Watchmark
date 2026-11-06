@@ -1,0 +1,15 @@
+# Build context of deploy/web.Dockerfile is the repo root: send only what the
+# frontend build needs, and never secrets.
+.env
+.env.*
+**/.env
+deploy/*.env
+.git/
+backend/
+docs/
+backups/
+**/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+**/*.log

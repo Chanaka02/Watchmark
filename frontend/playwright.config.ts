@@ -10,10 +10,15 @@ import { defineConfig, devices } from '@playwright/test'
  * DB_* environment variables.
  *
  * Locally, servers that are already running on these ports are reused.
+ *
+ * E2E_BASE_URL points the tests at a stack that is already running instead,
+ * e.g. the production Compose stack (https://localhost:8443); no servers are
+ * started then, and its self-signed local certificate is accepted.
  */
 const backendPort = process.env.E2E_BACKEND_PORT ?? '8081'
 const backendUrl = `http://localhost:${backendPort}`
 const ci = !!process.env.CI
+const externalBaseUrl = process.env.E2E_BASE_URL
 
 const inheritedEnv = Object.fromEntries(
   Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
@@ -29,7 +34,8 @@ export default defineConfig({
   reporter: ci ? [['github'], ['html', { open: 'never' }]] : 'list',
   timeout: 60_000,
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: externalBaseUrl ?? 'http://localhost:5173',
+    ignoreHTTPSErrors: !!externalBaseUrl,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     // A fixed zone, so "today" in assertions matches the browser and the account.
@@ -37,7 +43,7 @@ export default defineConfig({
     locale: 'en-GB',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: [
+  webServer: externalBaseUrl ? undefined : [
     {
       // cmd.exe only runs a script from the current folder with an explicit ".\".
       command: process.platform === 'win32' ? '.\\mvnw.cmd -q spring-boot:run' : './mvnw -q spring-boot:run',
