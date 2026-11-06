@@ -19,8 +19,9 @@ export function AppLayout() {
       </a>
 
       <header className="border-b border-line bg-surface/80">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-center gap-6">
+        {/* Wraps instead of scrolling sideways when the links do not fit (phones). */}
+        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link to="/" className="flex items-center gap-2 rounded-md text-lg font-semibold tracking-tight">
               <Clapperboard aria-hidden="true" className="size-6 text-accent" />
               Watchmark
@@ -47,7 +48,7 @@ function MainNav() {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `rounded-md px-2 py-1 text-sm font-medium ${isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'}`
   return (
-    <nav aria-label="Main" className="flex items-center gap-2">
+    <nav aria-label="Main" className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <NavLink to="/library" className={linkClass}>
         Library
       </NavLink>
@@ -56,6 +57,9 @@ function MainNav() {
       </NavLink>
       <NavLink to="/history" className={linkClass}>
         History
+      </NavLink>
+      <NavLink to="/stats" className={linkClass}>
+        Stats
       </NavLink>
       <NavLink to="/discover" className={linkClass}>
         Discover

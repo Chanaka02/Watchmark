@@ -14,6 +14,7 @@ import { RegisterPage } from '../pages/RegisterPage'
 import { SearchPage } from '../pages/SearchPage'
 import { SeasonPage } from '../pages/SeasonPage'
 import { SettingsPage } from '../pages/SettingsPage'
+import { StatsPage } from '../pages/StatsPage'
 import { ShowPage } from '../pages/ShowPage'
 import { AppLayout } from './AppLayout'
 
@@ -32,6 +33,7 @@ export const routes: RouteObject[] = [
       { path: 'library', element: signedIn(<LibraryPage />) },
       { path: 'history', element: signedIn(<HistoryPage />) },
       { path: 'calendar', element: signedIn(<CalendarPage />) },
+      { path: 'stats', element: signedIn(<StatsPage />) },
       { path: 'settings', element: signedIn(<SettingsPage />) },
       { path: 'search', element: signedIn(<SearchPage />) },
       { path: 'shows/:ref', element: signedIn(<ShowPage />) },

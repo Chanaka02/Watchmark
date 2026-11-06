@@ -72,12 +72,17 @@ public abstract class TrackingTestSupport {
 	public record User(AuthTestClient client, Cookie session, String email, long id) {
 	}
 
-	/** One episode of a scripted show. */
-	public record Ep(int season, int number, LocalDate airDate) {
+	/** One episode of a scripted show; {@code runtime} may be {@code null} (unknown). */
+	public record Ep(int season, int number, LocalDate airDate, Integer runtime) {
 	}
 
+	/** An episode with a 30-minute runtime. */
 	protected static Ep ep(int season, int number, LocalDate airDate) {
-		return new Ep(season, number, airDate);
+		return new Ep(season, number, airDate, 30);
+	}
+
+	protected static Ep ep(int season, int number, LocalDate airDate, Integer runtime) {
+		return new Ep(season, number, airDate, runtime);
 	}
 
 	@BeforeEach
@@ -90,18 +95,26 @@ public abstract class TrackingTestSupport {
 
 	/** Publishes a show at the fake provider and returns its ref ({@code tmdb:<id>}). */
 	protected String publish(ShowStatus status, Ep... episodes) {
+		return publishWithGenres(status, List.of(), episodes);
+	}
+
+	protected String publishWithGenres(ShowStatus status, List<String> genres, Ep... episodes) {
 		String id = Integer.toString(showIds.incrementAndGet());
-		publishAs(id, status, List.of(episodes));
+		publishAs(id, status, genres, List.of(episodes));
 		return "tmdb:" + id;
 	}
 
 	/** (Re)publishes the show's data; a later sync applies it. */
 	protected void publishAs(String id, ShowStatus status, List<Ep> episodes) {
+		publishAs(id, status, List.of(), episodes);
+	}
+
+	protected void publishAs(String id, ShowStatus status, List<String> genres, List<Ep> episodes) {
 		Map<Integer, List<EpisodeInfo>> bySeason = new LinkedHashMap<>();
 		for (Ep e : episodes) {
 			bySeason.computeIfAbsent(e.season(), n -> new ArrayList<>())
 				.add(new EpisodeInfo(id + "-" + e.season() + "-" + e.number(), e.season(), e.number(),
-						"Episode " + e.number(), null, e.airDate(), 30, null));
+						"Episode " + e.number(), null, e.airDate(), e.runtime(), null));
 		}
 		List<SeasonSummary> summaries = new ArrayList<>();
 		provider.seasons.keySet().removeIf(key -> key.startsWith(id + "/"));
@@ -112,7 +125,7 @@ public abstract class TrackingTestSupport {
 					new SeasonDetails("tmdb:" + id, number, "Season " + number, null, null, null, list));
 		});
 		provider.shows.put(id, new ShowDetails("tmdb:" + id, "Show " + id, null, null, null, status, null, null, null,
-				null, List.of(), List.of(), null, summaries.size(), episodes.size(), null, summaries, null, null,
+				null, genres, List.of(), null, summaries.size(), episodes.size(), null, summaries, null, null,
 				List.of()));
 	}
 

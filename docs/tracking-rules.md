@@ -8,7 +8,7 @@ that must exist and pass; per the agreed process those tests are written
 |---|---|
 | R1, R10, R11 | Implemented: library (Milestone 4), watch history and operations (Milestone 5) |
 | R2–R9, R12 | Implemented (Milestone 5): `ShowTimelineTests`, `TrackingApiTests`, `ProgressAndStatusTests`, `TrackingRetentionJobTests` |
-| R2 statistics, R10 stats | User-wide totals exist (`WatchHistory.totals`); the statistics API follows in Milestone 8 |
+| R2 statistics, R10 stats | Implemented (Milestone 8): `StatsApiTests` checks unique vs. total, rewatches, removed shows and unwatched rows against a hand-computed fixture |
 
 Terms:
 

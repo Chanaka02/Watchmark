@@ -2,8 +2,8 @@
 
 Status: health, authentication/profile (Milestone 1), catalog (Milestone 2)
 library (Milestone 4), tracking/progress (Milestone 5), dashboard/history
-(Milestone 6) and calendar (Milestone 7) endpoints are **implemented**; the rest
-is design. The generated OpenAPI
+(Milestone 6), calendar (Milestone 7) and statistics (Milestone 8) endpoints are
+**implemented**; the rest is design. The generated OpenAPI
 document is served at `/v3/api-docs` when `API_DOCS_ENABLED=true`.
 
 Conventions:
@@ -66,7 +66,7 @@ Conventions:
 | `GET /me/history?cursor=&size=` | Viewing history, newest first; `size` 1–100 (default 30); `400 invalid-cursor` | 6 ✅ |
 | `GET /me/dashboard` | Continue watching, upcoming (14 days), recently watched, recently added | 6 ✅ |
 | `GET /me/calendar?from=&to=` | Episodes by air date for library shows (inclusive range, at most 62 days; default today + 27 days); undated episodes listed separately | 7 ✅ |
-| `GET /me/stats?range=week\|month\|all` | Statistics (R2) | 8 |
+| `GET /me/stats?range=week\|month\|all` | Viewing statistics (R2); default `month`; `400 invalid-range` for other values | 8 ✅ |
 
 ## Examples
 
@@ -385,13 +385,32 @@ GET /api/v1/me/calendar?from=2026-10-26&to=2026-12-06
 
 ### Statistics
 
+Built from active watch rows only (soft-deleted rows are not viewings), across
+every cycle, **including shows removed from the library** (R10). Nothing is
+estimated.
+
+| Field | Meaning |
+|---|---|
+| `range` | `week` = the last 7 days, `month` = the last 30 days (both counted in the user's time zone and ending today), `all` = everything. `from`/`to` are the local dates covered (`from` is `null` for `all`). |
+| `uniqueEpisodes` | Distinct episodes watched in the range (R2). |
+| `totalWatches` | Viewings in the range; each rewatch counts again (R2). |
+| `minutesWatched` | Sum of the **episode's own runtime** for each viewing. |
+| `watchesWithUnknownRuntime` | Viewings whose episode has no runtime; they add nothing to `minutesWatched` (no guessed or show-average runtime). |
+| `showsWatched` | Distinct shows with a viewing in the range. |
+| `library` | Shows currently marked Watching and Completed (not removed); independent of the range. |
+| `topShows` | Up to 5 shows by viewings (then minutes, then name). |
+| `topGenres` | Up to 10 genres by viewings: a viewing counts once for **each** genre of its show, so genre totals can exceed `totalWatches`. Shows without genres are not counted here. |
+| `activity` | Viewings and minutes per local day (`week`, `month`: every day of the range, zeros included) or per local month (`all`: from the month of the first viewing to the current month, zeros included; empty when there is no history). |
+
 ```http
-GET /api/v1/me/stats?range=all
+GET /api/v1/me/stats?range=week
 
 200 OK
-{ "uniqueEpisodes": 812, "totalWatches": 905,
-  "hoursWatched": 611.5, "episodesWithUnknownRuntime": 14,
-  "seriesCompleted": 17, "seriesWatching": 6,
-  "topGenres": [ { "name": "Drama", "watches": 402 } ],
-  "activity": [ { "period": "2026-10", "watches": 38 } ] }
+{ "range": "week", "from": "2026-10-31", "to": "2026-11-06",
+  "uniqueEpisodes": 12, "totalWatches": 14, "minutesWatched": 615, "watchesWithUnknownRuntime": 1,
+  "showsWatched": 3,
+  "library": { "watching": 6, "completed": 17 },
+  "topShows": [ { "show": { "ref": "tmdb:1399", "name": "…" }, "watches": 8, "minutes": 440 } ],
+  "topGenres": [ { "name": "Drama", "watches": 10, "minutes": 500 } ],
+  "activity": { "unit": "DAY", "points": [ { "period": "2026-10-31", "watches": 0, "minutes": 0 }, … ] } }
 ```

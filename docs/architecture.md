@@ -48,7 +48,7 @@ app.watchmark
 ├── tracking/      episode_watches, tracking_operations, progress, undo, history, purge job
 ├── dashboard/     signed-in home page: composes library, progress and history
 ├── calendar/      episodes by air date, undated episodes listed separately
-└── stats/         statistics queries
+└── stats/         statistics: viewings, time, genres, activity (nothing estimated)
 ```
 
 Layering inside a feature: **controller** (HTTP only, no business rules) →
