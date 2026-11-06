@@ -1,7 +1,9 @@
 import { Clapperboard, LogOut, Search, Settings } from 'lucide-react'
+import { Suspense } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 
 import { Button } from '../components/Button'
+import { PageLoader } from '../components/PageLoader'
 import { buttonClasses } from '../components/buttonStyles'
 import { useCurrentUser, useLogout } from '../features/auth/useAuth'
 import { Attribution } from '../features/catalog/Attribution'
@@ -33,7 +35,10 @@ export function AppLayout() {
       </header>
 
       <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
-        <Outlet />
+        {/* Pages are loaded on demand (see routes.tsx). */}
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <footer className="space-y-3 border-t border-line py-6 text-center text-sm text-ink-muted">
@@ -96,15 +101,16 @@ function AccountNav() {
   }
   return (
     <nav aria-label="Account" className="flex items-center gap-3">
+      {/* The accessible name includes the visible name (WCAG 2.5.3): "Ana Settings", or "Settings" on phones. */}
       <NavLink
         to="/settings"
-        aria-label="Settings"
         className={({ isActive }) =>
           `flex items-center gap-2 rounded-md px-2 py-1 text-sm ${isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'}`
         }
       >
         <Settings aria-hidden="true" className="size-4" />
         <span className="hidden sm:inline">{currentUser.data.displayName}</span>
+        <span className="sr-only"> Settings</span>
       </NavLink>
       <Button variant="ghost" pending={logout.isPending} onClick={() => logout.mutate(undefined, { onSettled: () => navigate('/') })}>
         <LogOut aria-hidden="true" className="size-4" />

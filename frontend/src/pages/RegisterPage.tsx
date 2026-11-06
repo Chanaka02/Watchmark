@@ -44,7 +44,7 @@ export function RegisterPage() {
       footer={
         <>
           Already have an account?{' '}
-          <Link to={next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`} className="text-accent hover:underline">
+          <Link to={next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`} className="text-accent underline underline-offset-4">
             Sign in
           </Link>
         </>

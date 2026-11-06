@@ -6,7 +6,7 @@ episode you watch. *Watchmark* is a provisional working name.
 > Personal, non-commercial project. Show metadata will come from TMDB under its
 > non-commercial API terms — see [docs/tmdb.md](docs/tmdb.md).
 
-**Status:** Milestone 8 (statistics). See [docs/roadmap.md](docs/roadmap.md).
+**Status:** Milestone 9 (hardening). See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 
@@ -15,7 +15,7 @@ episode you watch. *Watchmark* is a provisional working name.
 | Frontend | React 19, TypeScript, Vite 8, React Router 8, TanStack Query 5, React Hook Form + Zod, Tailwind CSS 4, Lucide |
 | Backend | Java 25 (LTS), Spring Boot 4.1, Spring Web MVC, Spring Security 7, Spring Session JDBC, Spring Data JPA, Bean Validation, Flyway |
 | Database | MySQL 8.4 LTS |
-| Tests | JUnit 5, Testcontainers (real MySQL), Vitest, React Testing Library |
+| Tests | JUnit 5, Testcontainers (real MySQL), Vitest, React Testing Library, Playwright + axe-core |
 | CI | GitHub Actions |
 
 ## Prerequisites
@@ -66,6 +66,23 @@ WATCHMARK_BACKEND_URL=http://localhost:8081 npm run dev    # frontend
 cd backend  && ./mvnw verify    # needs Docker running (Testcontainers)
 cd frontend && npm test && npm run lint && npm run typecheck
 ```
+
+Browser end-to-end and accessibility tests (Playwright, Chromium) run against
+the real backend with the mock catalogue and the production frontend build.
+They need the Compose database running (`docker compose up -d`); Playwright
+starts the backend on port 8081 and the frontend preview on 5173 itself (or
+reuses ones already running there):
+
+```sh
+cd frontend
+npx playwright install chromium   # once
+npm run e2e
+```
+
+They cover registering, adding a show, marking an episode watched, undo, the
+dashboard, history and statistics; axe-core WCAG 2.2 A/AA checks on every page
+in light and dark mode; and no sideways scrolling at 375 px. Automated
+accessibility checks find only part of the problems.
 
 ## Repository layout
 

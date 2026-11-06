@@ -84,9 +84,35 @@ request appears to come from the proxy and shares one bucket.
 - All errors are RFC 9457 `application/problem+json`, including those raised by
   security filters. No stack traces, exception messages or rejected values.
 - Request DTOs holding passwords override `toString()` to redact them.
+- Spring's own MVC errors (unknown route, wrong method, malformed JSON, wrong
+  parameter type) get a stable `type` and no framework wording; an unexpected
+  exception returns a generic `500 /problems/internal-error` and is logged
+  server-side only. `ErrorResponsesTests` checks each case, including that an
+  exception message never reaches the client.
+
+## Dependency scanning
+
+- **Dependabot** (`.github/dependabot.yml`) proposes weekly updates for Maven,
+  npm and GitHub Actions.
+- **CI** fails on any high or critical advisory in the frontend's installed
+  packages (`npm audit --audit-level=high`).
+- **Maven:** GitHub's Dependabot *alerts* and *security updates* cover
+  `backend/pom.xml`; enable both in the repository's Settings → Code security
+  (a repository setting, not code). A heavier scanner (OWASP Dependency-Check
+  needs an NVD API key) was left out on purpose.
 
 ## Production checklist (Milestone 10)
 
 - `SESSION_COOKIE_SECURE=true` (HTTPS only).
 - Forwarded-header handling for real client IPs.
-- HSTS and a Content-Security-Policy at the reverse proxy.
+- HSTS and a Content-Security-Policy at the reverse proxy. Draft, to be
+  verified against the production build in Milestone 10:
+
+  ```
+  default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://image.tmdb.org;
+  connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';
+  frame-ancestors 'none'
+  ```
+
+  React sets `style` through the DOM (not inline markup), so `style-src 'self'`
+  does not block the progress bars and charts.

@@ -37,7 +37,7 @@ export function LoginPage() {
       footer={
         <>
           New to Watchmark?{' '}
-          <Link to={next === '/' ? '/register' : `/register?next=${encodeURIComponent(next)}`} className="text-accent hover:underline">
+          <Link to={next === '/' ? '/register' : `/register?next=${encodeURIComponent(next)}`} className="text-accent underline underline-offset-4">
             Create an account
           </Link>
         </>

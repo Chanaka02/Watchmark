@@ -19,6 +19,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Browser end-to-end tests (e2e/) run in Playwright, not here.
+    include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
     restoreMocks: true,
     // Interaction tests type character by character; leave headroom on slow runners.

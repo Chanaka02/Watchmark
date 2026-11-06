@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 
 import { fetchCurrentUser, login, logout, register } from './api'
 
@@ -33,11 +33,18 @@ export function useLogout() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: logout,
-    onSettled: () => {
-      // Drop every cached query: nothing from the previous user may leak into
-      // the next session on this device.
-      queryClient.clear()
-      queryClient.setQueryData(currentUserKey, null)
-    },
+    onSettled: () => showSignedOut(queryClient),
   })
+}
+
+/**
+ * After sign-out or account deletion. "Signed out" is set first so every
+ * mounted component sees it (clearing the cache first would leave them
+ * watching removed entries, still showing the old user's pages); then
+ * everything else cached is dropped, so nothing from that account can leak
+ * into the next session on this device.
+ */
+export function showSignedOut(queryClient: QueryClient) {
+  queryClient.setQueryData(currentUserKey, null)
+  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== currentUserKey[0] })
 }

@@ -212,14 +212,15 @@ function MonthGrid({
             {week.map((day) => {
               const items = byDay.get(day) ?? []
               const outside = monthOf(day) !== month
+              // Days of other months are told apart by a shaded cell, not by fainter (low-contrast) text.
               return (
-                <td key={day} className="h-28 border border-line p-1.5 align-top">
+                <td key={day} className={`h-28 border border-line p-1.5 align-top ${outside ? 'bg-surface-raised/50' : ''}`}>
                   <div className="flex h-full flex-col gap-1">
                     <time
                       dateTime={day}
                       aria-current={day === today ? 'date' : undefined}
                       className={`self-start rounded px-1 text-xs ${
-                        day === today ? 'bg-accent font-semibold text-accent-ink' : outside ? 'text-ink-muted/60' : 'text-ink-muted'
+                        day === today ? 'bg-accent font-semibold text-accent-ink' : 'text-ink-muted'
                       }`}
                     >
                       {Number(day.slice(8))}

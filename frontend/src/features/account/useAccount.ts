@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { apiDelete, apiPatch, apiPut } from '../../lib/api'
 import type { User } from '../auth/api'
-import { currentUserKey } from '../auth/useAuth'
+import { currentUserKey, showSignedOut } from '../auth/useAuth'
 
 export function useUpdateProfile() {
   const queryClient = useQueryClient()
@@ -30,9 +30,6 @@ export function useDeleteAccount() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (password: string) => apiDelete<void>('/api/v1/me', { body: { password } }),
-    onSuccess: () => {
-      queryClient.clear()
-      queryClient.setQueryData(currentUserKey, null)
-    },
+    onSuccess: () => showSignedOut(queryClient),
   })
 }

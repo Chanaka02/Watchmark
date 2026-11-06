@@ -59,7 +59,6 @@ export function EpisodeTrackingControls({
           variant="ghost"
           className="h-8 px-2 text-xs"
           disabled={pending}
-          aria-label={`Watch up to ${label}`}
           onClick={() =>
             upTo.mutate(episode.id, {
               onError: (error) => onError(error.message),
@@ -67,7 +66,8 @@ export function EpisodeTrackingControls({
             })
           }
         >
-          Up to here
+          {/* The accessible name starts with the visible text (WCAG 2.5.3). */}
+          Up to here<span className="sr-only">: mark everything up to {label} watched</span>
         </Button>
       )}
       <Button

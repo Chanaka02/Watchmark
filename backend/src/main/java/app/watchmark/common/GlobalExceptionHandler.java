@@ -16,6 +16,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.csrf.CsrfException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -122,11 +123,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@Override
 	protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers,
 			HttpStatusCode statusCode, WebRequest request) {
-		if (body instanceof ProblemDetail problem
+		// Some (unknown route, wrong method) arrive without a body; their problem is on the exception.
+		Object problemBody = body == null && ex instanceof ErrorResponse response ? response.getBody() : body;
+		if (problemBody instanceof ProblemDetail problem
 				&& (problem.getType() == null || ABOUT_BLANK.equals(problem.getType()))) {
 			problem.setType(URI.create("/problems/" + slugFor(statusCode)));
+			if (statusCode.value() == HttpStatus.NOT_FOUND.value()) {
+				// Spring's text ("No static resource …") describes internals, not the API.
+				problem.setDetail("There is nothing at this address.");
+			}
 		}
-		return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+		return super.handleExceptionInternal(ex, problemBody, headers, statusCode, request);
 	}
 
 	static ProblemDetail problem(HttpStatusCode status, String type, String title, String detail) {

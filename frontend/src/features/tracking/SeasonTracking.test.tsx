@@ -137,7 +137,7 @@ describe('Season tracking', () => {
     renderRoute('/shows/tmdb:1/seasons/1')
     const user = userEvent.setup()
 
-    await user.click(await screen.findByRole('button', { name: 'Watch up to S1 E3' }))
+    await user.click(await screen.findByRole('button', { name: 'Up to here: mark everything up to S1 E3 watched' }))
 
     expect(await screen.findByText('Marked 2 episodes watched. Skipped 1 already watched.')).toBeInTheDocument()
     expect(api.calls('POST /api/v1/tracking/episodes/103/watch-up-to')).toHaveLength(1)

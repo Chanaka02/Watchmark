@@ -13,8 +13,8 @@ next starts.
 | 5 | **Episode tracking**: watch/unwatch, season, up-to, undo (R3), eligibility, progress, season states, rewatch, retention purge job (R12), tracker UI | Rule tests R2–R9, R12 pass | ✅ done |
 | 6 | **Dashboard and history**, plus the profile/settings page | Shows only real data | ✅ done |
 | 7 | **Calendar** (list + month, time-zone aware) | Unknown dates shown separately, none invented | ✅ done |
-| 8 | **Statistics** (unique vs total, hours, genres, activity) | Verified against fixtures | ✅ done (pending review) |
-| 9 | **Hardening**: accessibility, Playwright end-to-end tests, dependency scanning, error pages | Register → track episode end-to-end test passes | |
+| 8 | **Statistics** (unique vs total, hours, genres, activity) | Verified against fixtures | ✅ done |
+| 9 | **Hardening**: accessibility, Playwright end-to-end tests, dependency scanning, error pages | Register → track episode end-to-end test passes | ✅ done (pending review) |
 | 10 | **Deployment**: compare managed platform vs VPS + Compose + Caddy (cost, security, backups, maintenance), then deploy after approval | Documented deploy, tested backup restore, rollback guide | |
 
 The profile/settings page (display name, time zone, password, account

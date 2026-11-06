@@ -32,6 +32,23 @@ describe('app shell', () => {
     expect(api.calls('POST /api/v1/auth/logout')[0].headers.get('X-XSRF-TOKEN')).toBe('test-csrf-token')
   })
 
+  it('signing out from the dashboard replaces it with the signed-out home page', async () => {
+    setCsrfCookie()
+    mockApi({
+      'GET /api/v1/auth/me': () => json(200, testUser),
+      'POST /api/v1/auth/logout': () => noContent(),
+    })
+    renderRoute('/')
+    const user = userEvent.setup()
+
+    expect(await screen.findByRole('heading', { name: 'Welcome back, Ana.' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /sign out/i }))
+
+    expect(await screen.findByRole('heading', { name: 'Track every episode.' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Welcome back, Ana.' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument()
+  })
+
   it('shows an error when the backend is unavailable', async () => {
     mockApi({ 'GET /api/v1/auth/me': () => problem(503, 'unavailable', 'Service unavailable.') })
     renderRoute('/')
