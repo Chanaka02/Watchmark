@@ -55,6 +55,7 @@ function useTrackingMutation<TInput, TResult>(ref: string, request: (input: TInp
       void queryClient.invalidateQueries({ queryKey: ['library', 'list'] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       void queryClient.invalidateQueries({ queryKey: ['history'] })
+      void queryClient.invalidateQueries({ queryKey: ['calendar'] })
     },
   })
 }

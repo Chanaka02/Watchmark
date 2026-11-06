@@ -47,7 +47,7 @@ app.watchmark
 ├── library/       user_shows: status, rating, notes, remove/purge
 ├── tracking/      episode_watches, tracking_operations, progress, undo, history, purge job
 ├── dashboard/     signed-in home page: composes library, progress and history
-├── calendar/      upcoming episodes
+├── calendar/      episodes by air date, undated episodes listed separately
 └── stats/         statistics queries
 ```
 

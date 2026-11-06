@@ -1,8 +1,9 @@
 # API contract (v1)
 
 Status: health, authentication/profile (Milestone 1), catalog (Milestone 2)
-library (Milestone 4), tracking/progress (Milestone 5) and dashboard/history
-(Milestone 6) endpoints are **implemented**; the rest is design. The generated OpenAPI
+library (Milestone 4), tracking/progress (Milestone 5), dashboard/history
+(Milestone 6) and calendar (Milestone 7) endpoints are **implemented**; the rest
+is design. The generated OpenAPI
 document is served at `/v3/api-docs` when `API_DOCS_ENABLED=true`.
 
 Conventions:
@@ -64,7 +65,7 @@ Conventions:
 | `POST /tracking/operations/{operationId}/undo` | Undo an operation within the undo window (R3) | 5 ✅ |
 | `GET /me/history?cursor=&size=` | Viewing history, newest first; `size` 1–100 (default 30); `400 invalid-cursor` | 6 ✅ |
 | `GET /me/dashboard` | Continue watching, upcoming (14 days), recently watched, recently added | 6 ✅ |
-| `GET /me/calendar?from=&to=` | Upcoming episodes; unknown dates listed separately | 7 |
+| `GET /me/calendar?from=&to=` | Episodes by air date for library shows (inclusive range, at most 62 days; default today + 27 days); undated episodes listed separately | 7 ✅ |
 | `GET /me/stats?range=week\|month\|all` | Statistics (R2) | 8 |
 
 ## Examples
@@ -350,6 +351,37 @@ GET /api/v1/me/dashboard
 ```
 
 `today` is the user's date in their time zone; "upcoming" starts from it.
+
+### Calendar
+
+Episodes of shows in the library that are not removed (R10) or marked Dropped.
+Air dates are calendar dates without a time of day (TMDB publishes no air
+times), so they are never shifted between time zones; the user's time zone only
+decides what "today" is (default range, highlighting, eligibility).
+
+- `episodes`: every episode with an air date in `[from, to]`, oldest first, with
+  `watched` for the current cycle. Past days are included, so a month view
+  shows what was already watched. Specials have `season: 0`.
+- `unscheduled`: per show, episodes with **no announced date** that have not
+  evidently aired (rule R5: no later episode has aired) and are not watched.
+  They never appear in `episodes` and are never given an estimated date.
+  Independent of the range.
+- `400 /problems/invalid-range` when `from` is after `to`, the range is longer
+  than 62 days, or a date is malformed.
+
+```http
+GET /api/v1/me/calendar?from=2026-10-26&to=2026-12-06
+
+200 OK
+{ "today": "2026-11-02", "from": "2026-10-26", "to": "2026-12-06",
+  "episodes": [
+    { "show": { "ref": "tmdb:1399", "name": "…", "posterUrl": "…" },
+      "episode": { "id": 7001, "season": 2, "episode": 4, "name": "…", "airDate": "2026-11-02", "runtimeMinutes": 50 },
+      "watched": false } ],
+  "unscheduled": [
+    { "show": { "ref": "tmdb:1400", "name": "…" },
+      "episodes": [ { "id": 7100, "season": 1, "episode": 1, "name": "Episode 1" } ] } ] }
+```
 
 ### Statistics
 

@@ -51,6 +51,9 @@ function MainNav() {
       <NavLink to="/library" className={linkClass}>
         Library
       </NavLink>
+      <NavLink to="/calendar" className={linkClass}>
+        Calendar
+      </NavLink>
       <NavLink to="/history" className={linkClass}>
         History
       </NavLink>

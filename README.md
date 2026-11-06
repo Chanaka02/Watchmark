@@ -6,7 +6,7 @@ episode you watch. *Watchmark* is a provisional working name.
 > Personal, non-commercial project. Show metadata will come from TMDB under its
 > non-commercial API terms — see [docs/tmdb.md](docs/tmdb.md).
 
-**Status:** Milestone 6 (dashboard, history and settings). See [docs/roadmap.md](docs/roadmap.md).
+**Status:** Milestone 7 (calendar). See [docs/roadmap.md](docs/roadmap.md).
 
 ## Stack
 

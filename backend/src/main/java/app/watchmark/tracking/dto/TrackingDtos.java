@@ -90,8 +90,17 @@ public final class TrackingDtos {
 	public record ShowSnapshot(Counts progress, NextEpisode nextEpisode, Instant lastWatchedAt) {
 	}
 
-	/** An episode of a library show airing soon. */
-	public record UpcomingEpisode(long showId, long id, int season, int episode, String name, LocalDate airDate) {
+	/**
+	 * An episode of a library show with a known air date.
+	 *
+	 * @param watched watched in the show's current cycle
+	 */
+	public record AiringEpisode(long showId, long id, int season, int episode, String name, LocalDate airDate,
+			Integer runtimeMinutes, boolean watched) {
+	}
+
+	/** An episode with no announced date that has not evidently aired (R5). */
+	public record UndatedEpisode(long showId, long id, int season, int episode, String name) {
 	}
 
 	public record HistoryEpisode(long id, int season, int episode, String name, Integer runtimeMinutes) {

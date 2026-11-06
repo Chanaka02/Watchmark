@@ -81,7 +81,15 @@ function DashboardSections({ dashboard }: { dashboard: Dashboard }) {
       </Section>
 
       {upcoming.length > 0 && (
-        <Section title="Upcoming" icon={CalendarClock}>
+        <Section
+          title="Upcoming"
+          icon={CalendarClock}
+          action={
+            <Link to="/calendar" className="text-sm text-accent hover:underline">
+              Calendar
+            </Link>
+          }
+        >
           <UpcomingList items={upcoming} today={today} />
         </Section>
       )}

@@ -1,6 +1,7 @@
 package app.watchmark.dashboard;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -83,8 +84,11 @@ public class DashboardService {
 		List<UserShow> following = library.stream().filter(e -> e.getStatus() != LibraryStatus.DROPPED).toList();
 		Map<Long, UserShow> byShow = following.stream()
 			.collect(Collectors.toMap(e -> e.getShow().getId(), Function.identity()));
-		return progress.upcoming(userId, following, UPCOMING_DAYS, UPCOMING_LIMIT)
+		LocalDate today = progress.today(userId);
+		return progress.airing(userId, following, today, today.plusDays(UPCOMING_DAYS))
 			.stream()
+			.filter(e -> !e.watched())
+			.limit(UPCOMING_LIMIT)
 			.map(e -> new Upcoming(LibraryShow.from(byShow.get(e.showId()).getShow()),
 					new UpcomingEpisodeInfo(e.id(), e.season(), e.episode(), e.name(), e.airDate())))
 			.toList();

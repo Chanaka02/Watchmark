@@ -53,6 +53,7 @@ function useLibraryMutation<TInput>(ref: string, request: (input: TInput) => Pro
       void queryClient.invalidateQueries({ queryKey: ['tracking', ref] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       void queryClient.invalidateQueries({ queryKey: ['history'] })
+      void queryClient.invalidateQueries({ queryKey: ['calendar'] })
     },
   })
 }

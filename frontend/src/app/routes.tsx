@@ -3,6 +3,7 @@ import type { RouteObject } from 'react-router'
 
 import { RedirectIfSignedIn } from '../features/auth/RedirectIfSignedIn'
 import { RequireAuth } from '../features/auth/RequireAuth'
+import { CalendarPage } from '../pages/CalendarPage'
 import { DiscoverPage } from '../pages/DiscoverPage'
 import { HistoryPage } from '../pages/HistoryPage'
 import { HomePage } from '../pages/HomePage'
@@ -30,6 +31,7 @@ export const routes: RouteObject[] = [
       { path: 'discover', element: signedIn(<DiscoverPage />) },
       { path: 'library', element: signedIn(<LibraryPage />) },
       { path: 'history', element: signedIn(<HistoryPage />) },
+      { path: 'calendar', element: signedIn(<CalendarPage />) },
       { path: 'settings', element: signedIn(<SettingsPage />) },
       { path: 'search', element: signedIn(<SearchPage />) },
       { path: 'shows/:ref', element: signedIn(<ShowPage />) },

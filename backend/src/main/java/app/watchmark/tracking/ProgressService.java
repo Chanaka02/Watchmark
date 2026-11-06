@@ -32,7 +32,8 @@ import app.watchmark.tracking.dto.TrackingDtos.SeasonProgress;
 import app.watchmark.tracking.dto.TrackingDtos.SeasonSummary;
 import app.watchmark.tracking.dto.TrackingDtos.ShowProgress;
 import app.watchmark.tracking.dto.TrackingDtos.ShowSnapshot;
-import app.watchmark.tracking.dto.TrackingDtos.UpcomingEpisode;
+import app.watchmark.tracking.dto.TrackingDtos.AiringEpisode;
+import app.watchmark.tracking.dto.TrackingDtos.UndatedEpisode;
 
 /**
  * Progress of a show in the user's library (rules R6, R7) and rewatching. Only
@@ -147,8 +148,7 @@ public class ProgressService {
 		if (library.isEmpty()) {
 			return Map.of();
 		}
-		Map<Long, UserShow> byShow = new HashMap<>();
-		library.forEach(entry -> byShow.put(entry.getShow().getId(), entry));
+		Map<Long, UserShow> byShow = byShow(library);
 		Map<Long, List<Episode>> episodes = watches.findEpisodesOfShows(byShow.keySet())
 			.stream()
 			.collect(Collectors.groupingBy(e -> e.getShow().getId()));
@@ -182,34 +182,77 @@ public class ProgressService {
 	}
 
 	/**
-	 * Episodes of these library shows airing from today through {@code days}
-	 * days ahead in the user's time zone, oldest first, leaving out episodes
-	 * already watched in the current cycle. Undated episodes are never included.
+	 * Episodes of these library shows with an air date in {@code [from, to]},
+	 * oldest first, each with whether it is watched in the show's current cycle.
+	 * Undated episodes are never included (see {@link #undated}).
 	 */
 	@Transactional(readOnly = true)
-	public List<UpcomingEpisode> upcoming(long userId, Collection<UserShow> library, int days, int limit) {
+	public List<AiringEpisode> airing(long userId, Collection<UserShow> library, LocalDate from, LocalDate to) {
 		if (library.isEmpty()) {
 			return List.of();
 		}
-		Map<Long, UserShow> byShow = new HashMap<>();
-		library.forEach(entry -> byShow.put(entry.getShow().getId(), entry));
-		LocalDate today = timelines.today(userId);
-		List<Episode> airing = watches.findAiringBetween(byShow.keySet(), today, today.plusDays(days));
+		Map<Long, UserShow> byShow = byShow(library);
+		List<Episode> airing = watches.findAiringBetween(byShow.keySet(), from, to);
 		if (airing.isEmpty()) {
 			return List.of();
 		}
-		Set<Long> watchedInCycle = new HashSet<>();
+		Set<Long> watched = new HashSet<>();
 		for (EpisodeWatch row : watches.findActiveForEpisodes(userId, airing.stream().map(Episode::getId).toList())) {
 			if (row.getCycle() == byShow.get(row.getEpisode().getShow().getId()).getCurrentCycle()) {
-				watchedInCycle.add(row.getEpisodeId());
+				watched.add(row.getEpisodeId());
 			}
 		}
 		return airing.stream()
-			.filter(e -> !watchedInCycle.contains(e.getId()))
-			.limit(limit)
-			.map(e -> new UpcomingEpisode(e.getShow().getId(), e.getId(), e.getSeasonNumber(), e.getEpisodeNumber(),
-					e.getName(), e.getAirDate()))
+			.map(e -> new AiringEpisode(e.getShow().getId(), e.getId(), e.getSeasonNumber(), e.getEpisodeNumber(),
+					e.getName(), e.getAirDate(), e.getRuntimeMinutes(), watched.contains(e.getId())))
 			.toList();
+	}
+
+	/**
+	 * Episodes of these library shows with no announced date that have not
+	 * evidently aired (R5) and are not watched in the current cycle: the ones
+	 * still to come, whose date is unknown. In show then episode order.
+	 */
+	@Transactional(readOnly = true)
+	public List<UndatedEpisode> undated(long userId, Collection<UserShow> library) {
+		if (library.isEmpty()) {
+			return List.of();
+		}
+		Map<Long, UserShow> byShow = byShow(library);
+		Set<Long> withUndated = watches.findShowsWithUndatedEpisodes(byShow.keySet());
+		if (withUndated.isEmpty()) {
+			return List.of();
+		}
+		Map<Long, List<Episode>> episodes = watches.findEpisodesOfShows(withUndated)
+			.stream()
+			.collect(Collectors.groupingBy(e -> e.getShow().getId()));
+		Set<Long> watched = new HashSet<>();
+		for (EpisodeWatch row : watches.findActiveForShows(userId, withUndated)) {
+			if (row.getCycle() == byShow.get(row.getEpisode().getShow().getId()).getCurrentCycle()) {
+				watched.add(row.getEpisodeId());
+			}
+		}
+		LocalDate today = timelines.today(userId);
+		return episodes.entrySet()
+			.stream()
+			.sorted(Comparator.comparing(entry -> byShow.get(entry.getKey()).getShow().getName()))
+			.flatMap(entry -> {
+				ShowTimeline timeline = TimelineLoader.of(entry.getValue(), today);
+				return entry.getValue()
+					.stream()
+					.filter(e -> e.isActive() && e.getAirDate() == null && !watched.contains(e.getId())
+							&& !timeline.isEligible(e.getId()))
+					.sorted(Comparator.comparingInt(Episode::getSeasonNumber).thenComparingInt(Episode::getEpisodeNumber))
+					.map(e -> new UndatedEpisode(entry.getKey(), e.getId(), e.getSeasonNumber(), e.getEpisodeNumber(),
+							e.getName()));
+			})
+			.toList();
+	}
+
+	private static Map<Long, UserShow> byShow(Collection<UserShow> library) {
+		Map<Long, UserShow> byShow = new HashMap<>();
+		library.forEach(entry -> byShow.put(entry.getShow().getId(), entry));
+		return byShow;
 	}
 
 	private Map<Long, EpisodeWatch> watchedInCycle(long userId, UserShow entry) {

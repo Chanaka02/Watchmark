@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.data.domain.Limit;
@@ -98,6 +99,12 @@ interface EpisodeWatchRepository extends JpaRepository<EpisodeWatch, Long> {
 			""")
 	List<EpisodeWatch> findActiveForEpisodes(@Param("userId") Long userId,
 			@Param("episodeIds") Collection<Long> episodeIds);
+
+	@Query("""
+			select distinct e.show.id from Episode e
+			where e.show.id in :showIds and e.airDate is null and e.upstreamMissingAt is null
+			""")
+	Set<Long> findShowsWithUndatedEpisodes(@Param("showIds") Collection<Long> showIds);
 
 	/** Episodes still listed upstream with an air date in {@code [from, to]}. */
 	@Query("""
