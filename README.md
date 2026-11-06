@@ -122,5 +122,6 @@ Watchmark/
 - [Security](docs/security.md)
 - [Deployment options (comparison)](docs/deployment-options.md)
 - [Deployment guide](docs/deployment.md)
+- [Hosting on Microsoft Azure](docs/azure.md)
 - [TMDB usage and attribution](docs/tmdb.md)
 - [Roadmap](docs/roadmap.md)
